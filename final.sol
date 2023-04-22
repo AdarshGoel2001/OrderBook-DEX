@@ -65,7 +65,7 @@ function addOrder(Order memory order, OrderBook storage orderBook) external {
 }
 
 // Function to delete an order from the order book
-function deleteOrder(Order memory order, OrderBook storage orderBook) external {
+function deleteOrder(Order memory order, OrderBook storage orderBook) private {
     // Choose the correct tree based on whether the order is a buy or sell
     Node storage root = order.isBuy ? orderBook.rootBuy : orderBook.rootSell;
     
@@ -267,5 +267,60 @@ function getSuccessor(Node storage node) internal view returns (Node storage) {
         return parent;
     }
 }
+
+function findMinPrice(Node memory node) internal view returns (uint256) {
+    if (node.left != 0) {
+        return findMinPrice(node.left);
+    }
+    return node.price;
+}
+
+function findMaxPrice(Node memory node) internal view returns (uint256) {
+    if (node.right != 0) {
+        return findMaxPrice(node.right);
+    }
+    return node.price;
+}
+
+function matchOrders(OrderBook storage orderBook) internal {
+    Node storage sellNode = orderBook.rootSell;
+    Node storage buyNode = orderBook.rootBuy;
+
+    sellNode=findMinPrice(sellNode);
+    buyNode=findMaxPrice(buyNode);
+
+    // while (sellNode != 0 && buyNode != 0) {
+        if (sellNode.key <= buyNode.key) {
+            // If the sell price is less than or equal to the buy price, we have a match.
+            Order storage sellOrder = sellNode.head;
+            Order storage buyOrder = buyNode.head;
+            while (sellOrder != 0 && buyOrder != 0) {
+                if (sellOrder.quantity <= buyOrder.quantity) {
+                    // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
+                    // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
+                    buyOrder.quantity -= sellOrder.quantity;
+                    deleteOrder(sellOrder, orderBook);
+                    sellOrder = sellNode.head;
+                } else {
+                    // Otherwise, the sell order is partially matched.
+                    // emit Trade(sellOrder.user, buyOrder.user, buyOrder.quantity, sellNode.key);
+                    sellOrder.quantity -= buyOrder.quantity;
+                    deleteOrder(buyOrder, orderBook);
+                    buyOrder = buyNode.head;
+                }
+            }
+            if (sellNode.head == 0) {
+                // If all sell orders at this price have been matched, remove the node from the sell tree.
+                deleteNode(sellNode.key, false, orderBook);
+            }
+            sellNode = orderBook.rootSell;
+        } else {
+            // If the sell price is greater than the buy price, move to the next highest buy price.
+            buyNode = getSuccessor(buyNode);
+        }
+    // }
+}
+
+
 
 }
