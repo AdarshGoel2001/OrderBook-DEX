@@ -80,6 +80,7 @@ contract test {
         // Find the node corresponding to the order price
         Node storage node = getNode(order.price, root);
         require(node != 0, "Order not found");
+        next();
 
         // Find and remove the order from the linked list at the node
         Order storage curr = node.head;
