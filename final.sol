@@ -20,8 +20,8 @@ struct Node {
     uint256 key;
     Order head; // Linked list head pointer
     uint8 height;
-    Node left;
-    Node right;
+    bytes32 left;
+    bytes32 right;
 }
 
 // Order book struct
