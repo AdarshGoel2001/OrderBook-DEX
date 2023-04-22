@@ -1,13 +1,11 @@
 pragma solidity ^0.8.0; 
 
 import "./HitchensOrderStatisticsTreeLib.sol";
-import "solidity-linked-list/contracts/StructuredLinkedList.sol";
+// import "solidity-linked-list/contracts/StructuredLinkedList.sol";
 
 
 contract test is HitchensOrderStatisticsTreeLib {
-    using StructuredLinkedList for StructuredLinkedList.List;
 
-    StructuredLinkedList.List list;
     // Struct for an order
 
     // Struct for a tree order
@@ -20,24 +18,37 @@ contract test is HitchensOrderStatisticsTreeLib {
         bytes32 next; // Linked list pointer
     }
 
+    // global vars
     mapping (bytes32 => Order) public orders;
+    Tree buyTree;
+    Tree sellTree;
+
+    struct LL{
+        bytes32 head;
+        bytes32 tail;
+        uint256 size;
+    }
 
 
-    // Order book struct
-    // struct OrderBook {
-    //     Node rootBuy;
-    //     Node rootSell;
-    // }
+// struct Node {
+//         uint parent;
+//         uint left;
+//         uint right;
+//         bool red;
+//         bytes32[] keys;
+//         mapping(bytes32 => uint) keyMap;
+//         uint count;
+//     }
 
     // Function to add an order to the order book
     function addOrder(
         Order memory order,
-        OrderBook storage orderBook
+        bool _isBuy
     ) external {
         // Choose the correct tree based on whether the order is a buy or sell
-        Node storage root = order.isBuy
-            ? orderBook.rootBuy
-            : orderBook.rootSell;
+        uint storage root = _isBuy
+            ? buyTree.root;
+            : sellTree.root;
 
         // If the tree is empty, create a new node for the order
         if (root == 0) {
