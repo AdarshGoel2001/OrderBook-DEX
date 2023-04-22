@@ -9,9 +9,10 @@ struct Order {
     uint256 id;
     address trader;
     uint256 quantity;
+    bool isTaker;
     uint256 price;
     bool isBuy;
-    Order next; // Linked list pointer
+    bytes32 next; // Linked list pointer
 }
 
 // Struct for a tree node
