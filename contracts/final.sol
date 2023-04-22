@@ -1,6 +1,8 @@
 pragma solidity ^0.8.0; 
 
-contract  test {
+import "./HitchensOrderStatisticsTreeLib.sol";
+
+contract  test is HitchensOrderStatisticsTreeLib {
 
 
 // Struct for an order
