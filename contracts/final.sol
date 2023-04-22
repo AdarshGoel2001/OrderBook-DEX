@@ -2,32 +2,18 @@ pragma solidity ^0.8.0;
 
 import "./HitchensOrderStatisticsTreeLib.sol";
 // import "solidity-linked-list/contracts/StructuredLinkedList.sol";
+import "contracts/interfaces/Structs.sol";
 
 
 contract test is HitchensOrderStatisticsTreeLib {
 
-    // Struct for an order
-
-    // Struct for a tree order
-    struct Order {
-        address trader;
-        uint256 quantity;
-        bool isTaker;
-        uint256 price;
-        bool isBuy;
-        bytes32 next; // Linked list pointer
-    }
-
+    
     // global vars
     mapping (bytes32 => Order) public orders;
     Tree buyTree;
     Tree sellTree;
 
-    struct LL{
-        bytes32 head;
-        bytes32 tail;
-        uint256 size;
-    }
+    
 
 
 // struct Node {

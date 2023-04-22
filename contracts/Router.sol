@@ -1,20 +1,25 @@
 pragma solidity >=0.8.0;
 
 import "./interfaces/IGrid.sol";
+import "./interfaces/IERC20.sol";
 
 contract Router {
     address grid;
     address admin;
     IGrid gridContract;
+    address usdc;
 
     struct orderDetails {
-        ;
+        uint256 price;
+        uint256 amount;
+        bool isBuy;
     }
 
-    constructor(address _grid) {
+    constructor(address _grid, address _usdc) {
         grid = _grid;
         admin = msg.sender;
         gridContract = IGrid(grid);
+        usdc = _usdc;
     }
 
     modifier onlyAdmin() {
@@ -35,7 +40,20 @@ contract Router {
         gridContract = IGrid(grid);
     }
 
-    function placeOrder() public {}
+    function placeOrder(
+        uint256 shares,
+        uint256 price,
+        bool isTaker,
+        bool isBuy
+    ) public {
+        if (isTaker) {
+            uint256 currentPrice = gridContract.getCurrentPrice();
+            _transferInUSDC(msg.sender, currentPrice * shares);
+        } else {
+            uint256 amount = shares * price;
+            _transferInUSDC(msg.sender, amount);
+        }
+    }
 
     function deleteOrder() public {}
 
@@ -46,5 +64,8 @@ contract Router {
     function getEXEbalance(address consumer) public returns (uint256) {
         return gridContract.getEXEbalance(consumer);
     }
-    // CREATE READ UPDATE DELETE
+
+    function _transferInUSDC(address _user, uint256 _amount) internal {
+        IERC20(usdc).transferfrom(_user, grid, _amount);
+    }
 }
