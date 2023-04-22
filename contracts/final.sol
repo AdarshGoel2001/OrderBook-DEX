@@ -1,11 +1,17 @@
 pragma solidity ^0.8.0;
 
 import "./HitchensOrderStatisticsTreeLib.sol";
+import "solidity-linked-list/contracts/StructuredLinkedList.sol";
+
 
 contract test is HitchensOrderStatisticsTreeLib {
+    using StructuredLinkedList for StructuredLinkedList.List;
+
+    StructuredLinkedList.List list;
     // Struct for an order
+
+    // Struct for a tree order
     struct Order {
-        uint256 id;
         address trader;
         uint256 quantity;
         bool isTaker;
@@ -14,20 +20,14 @@ contract test is HitchensOrderStatisticsTreeLib {
         bytes32 next; // Linked list pointer
     }
 
-    // Struct for a tree node
-    struct Node {
-        uint256 key;
-        Order head; // Linked list head pointer
-        uint8 height;
-        Node left;
-        Node right;
-    }
+    mapping (bytes32 => Order) public orders;
+
 
     // Order book struct
-    struct OrderBook {
-        Node rootBuy;
-        Node rootSell;
-    }
+    // struct OrderBook {
+    //     Node rootBuy;
+    //     Node rootSell;
+    // }
 
     // Function to add an order to the order book
     function addOrder(
