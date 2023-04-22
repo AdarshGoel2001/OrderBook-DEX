@@ -1,15 +1,20 @@
 pragma solidity >=0.8.0;
 
+import "./interfaces/IGrid.sol";
+
 contract Router {
     address grid;
     address admin;
+    IGrid gridContract;
 
-    struct orderDetails{}
-    
+    struct orderDetails {
+        ;
+    }
 
     constructor(address _grid) {
         grid = _grid;
         admin = msg.sender;
+        gridContract = IGrid(grid);
     }
 
     modifier onlyAdmin() {
@@ -27,24 +32,19 @@ contract Router {
 
     function setGrid(address _grid) public {
         grid = _grid;
+        gridContract = IGrid(grid);
     }
 
-    function placeOrder(){
+    function placeOrder() public {}
 
-    }
+    function deleteOrder() public {}
 
-    ̀
+    function updateOrder() public {}
 
-    function deleteOrder(){
+    function getOrderDetails() public {}
 
-    }
-
-    function updateOrder(){
-
-    }
-
-    function getOrderDetails(){
-
+    function getEXEbalance(address consumer) public returns (uint256) {
+        return gridContract.getEXEbalance(consumer);
     }
     // CREATE READ UPDATE DELETE
 }
