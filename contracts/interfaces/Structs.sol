@@ -17,4 +17,18 @@ interface IGridStructs {
         Order tail;
         uint256 size;
     }
+    struct Node {
+        uint parent;
+        uint left;
+        IGridStructs.LL ll;
+        uint right;
+        bool red;
+        bytes32[] keys;
+        mapping(bytes32 => uint) keyMap;
+        uint count;
+    }
+    struct Tree {
+        uint root;
+        mapping(uint => Node) nodes;
+    }
 }
