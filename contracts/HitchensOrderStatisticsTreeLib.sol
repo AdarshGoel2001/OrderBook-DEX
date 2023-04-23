@@ -134,7 +134,7 @@ library HitchensOrderStatisticsTreeLib {
     )
         internal
         view
-        returns LL ll
+        returns (LL)
     {
         require(
             _exists(self, value),

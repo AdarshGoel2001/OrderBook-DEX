@@ -42,7 +42,7 @@ contract test is HitchensOrderStatisticsTreeLib {
     ) external {
         // Choose the correct tree based on whether the order is a buy or sell
         Tree storage tree = order.isBuy
-            ? buyTree;
+            ? buyTree
             : sellTree;
 
         orders[id]=order;
@@ -78,10 +78,21 @@ contract test is HitchensOrderStatisticsTreeLib {
         // } else {
         //     orderBook.rootSell = root;
         // }
+
+        matchOrders();
     }
 
     function getOrderByID(bytes32 id) internal returns(Order){
         return orders[id];
+    }
+
+    function getCurrentPrice(bool isBuy) returns(uint){
+        if(isBuy){
+            Node cur=_treeMaximum(buyTree);
+            return cur.ll.head.price;
+        }
+        Node cur=_treeMinimum(sellTree);
+        return cur.ll.head.price;
     }
 
     // Function to delete an order from the order book
@@ -136,6 +147,7 @@ contract test is HitchensOrderStatisticsTreeLib {
         // } else {
         //     orderBook.rootSell = root;
         // }
+        matchOrders();
         return true;
     }
 
