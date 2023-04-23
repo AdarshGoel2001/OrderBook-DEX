@@ -511,7 +511,9 @@ contract Grid {
         // } else {
         //     orderBook.rootSell = root;
         // }
-
+        if(order.isTaker){
+            takerMatching(order.id);
+        }
         matchOrders();
     }
 
@@ -529,7 +531,7 @@ contract Grid {
     }
 
     // Function to delete an order from the order book
-    function deleteOrder(bytes32 id) public onlyRouter {
+    function deleteOrder(bytes32 id, bool isTransaction) public onlyRouter {
         // Choose the correct tree based on whether the order is a buy or sell
         IGridStructs.Tree storage tree = orders[id].isBuy ? buyTree : sellTree;
 
@@ -566,6 +568,7 @@ contract Grid {
 
         // Rebalance the tree
         tree.root = _removeFixup(orders[id].isBuy, orders[id].price);
+        if(isTransaction){
         if (orders[id].isTaker) {
             IERC20(usdc).transfer(
                 orders[id].trader,
@@ -576,6 +579,7 @@ contract Grid {
                 orders[id].trader,
                 orders[id].quantity * orders[id].price
             );
+        }
         }
         delete orders[id]; // remove from map
 
@@ -784,12 +788,12 @@ contract Grid {
             );
             if (sellNodeLL.head.quantity > order.quantity) {
                 sellNodeLL.head.quantity -= order.quantity;
-                deleteOrder(order.id);
+                deleteOrder(order.id,false);
                 return;
             } else {
                 while (order.quantity > 0) {
                     order.quantity -= sellNodeLL.head.quantity;
-                    deleteOrder(sellNodeLL.head.id);
+                    deleteOrder(sellNodeLL.head.id,false);
                     sellNodeLL = _getNode(false, _treeMinimum(false));
                 }
             }
@@ -800,12 +804,12 @@ contract Grid {
             );
             if (buyNodeLL.head.quantity > order.quantity) {
                 buyNodeLL.head.quantity -= order.quantity;
-                deleteOrder(order.id);
+                deleteOrder(order.id,false);
                 return;
             } else {
                 while (order.quantity > 0) {
                     order.quantity -= buyNodeLL.head.quantity;
-                    deleteOrder(buyNodeLL.head.id);
+                    deleteOrder(buyNodeLL.head.id,false);
                     buyNodeLL = _getNode(false, _treeMinimum(false));
                 }
             }
@@ -835,7 +839,7 @@ contract Grid {
                         2 * sellOrder.quantity * buyOrder.price
                     );
                     nextDayExe[buyOrder.trader] += sellOrder.quantity;
-                    deleteOrder(sellOrder.id);
+                    deleteOrder(sellOrder.id,false);
                     sellOrder = sellNodeLL.head;
                 } else {
                     // Otherwise, the sell order is partially matched.
@@ -846,7 +850,7 @@ contract Grid {
                         2 * buyOrder.quantity * buyOrder.price
                     );
                     nextDayExe[buyOrder.trader] += buyOrder.quantity;
-                    deleteOrder(buyOrder.id);
+                    deleteOrder(buyOrder.id,false);
                     buyOrder = buyNodeLL.head;
                 }
             }
