@@ -82,15 +82,17 @@ contract Router {
         // gridContract.deleteOrder(_id);
     }
 
-    function updateOrder() public {}
-
     function getOrderDetails() public {}
 
     function getEXEbalance(address consumer) public returns (uint256) {
-        // return gridContract.getEXEbalance(consumer);
+        // return gridContract.exe(consumer);
     }
 
     function _transferInUSDC(address _user, uint256 _amount) internal {
         IERC20(usdc).transferFrom(_user, grid, _amount);
+    }
+
+    function whitelist() onlyAdmin {
+        gridContract.whitelist(msg.sender);
     }
 }

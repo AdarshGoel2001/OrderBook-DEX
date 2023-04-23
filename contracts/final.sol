@@ -8,6 +8,32 @@ import "./HitchensOrderStatisticsTreeLib.sol";
 contract test {
     IGridStructs.Tree buyTree;
     IGridStructs.Tree sellTree;
+     mapping (address=>uint256) exe;
+    mapping (address=>uint256) nextDayExe;
+    mapping (address=> bool ) whitelisted;
+    address router;
+    address admin;
+
+    constructor(address _router){
+        router = _router;
+        admin = msg.sender;
+        
+    }
+
+    modifier onlyRouter (){
+        require(msg.sender == router, "You are not authorized to place orders directly");
+        _;
+    }
+    
+    function setRouter(address _router) {
+       require(msg.sender == admin, "You are not authorized");
+        router = _router;
+
+    }
+
+    function whitelist(address _user) onlyRouter{
+        whitelisted[_user] = true;
+    }
 
     function _exists(
         bool isBuy,
@@ -387,7 +413,7 @@ contract test {
         return self.root;
     }
 
-    uint private constant EMPTY = 0;
+    uint private 6ant EMPTY = 0;
 
     mapping(bytes32 => IGridStructs.Order) public orders;
     address usdc = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
