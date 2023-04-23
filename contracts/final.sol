@@ -11,9 +11,7 @@ contract test is HitchensOrderStatisticsTreeLib {
     // global vars
     mapping (bytes32 => Order) public orders;
     Tree buyTree;
-    Tree sellTree;
-
-    
+    Tree sellTree;   
 
 
 // struct Node {
@@ -26,25 +24,33 @@ contract test is HitchensOrderStatisticsTreeLib {
 //         uint count;
 //     }
 
+
+    function addOrderToLL(Order memory order, LL ll) public returns (bool){
+        if(ll==0){
+
+        }
+        bytes32 id = sha3(object.number,object.name,now,length);
+        objects[id] = object;
+        head = id;
+        length = length+1;
+        AddEntry(head,object.number,object.name,object.next);
+    }
+
     // Function to add an order to the order book
     function addOrder(
-        Order memory order,
-        bool _isBuy
+        Order memory order
     ) external {
         // Choose the correct tree based on whether the order is a buy or sell
-        uint storage root = _isBuy
-            ? buyTree.root;
-            : sellTree.root;
+        Tree storage tree = order.isBuy
+            ? buyTree;
+            : sellTree;
 
+        
         // If the tree is empty, create a new node for the order
-        if (root == 0) {
-            root = Node({
-                key: order.price,
-                height: 1,
-                head: order,
-                left: 0,
-                right: 0
-            });
+        if (tree.root == 0) {
+            _insert(tree, 0x0, order.price);
+            LL memory ll= LL({head:, tail:, size:})
+            tree.root=
         } else {
             // Find the node corresponding to the order price or create a new node if it doesn't exist
             Node storage node = getNode(order.price, root);

@@ -11,8 +11,8 @@ interface IGridStructs {
         bytes32 next; // Linked list pointer
     }
     struct LL {
-        bytes32 head;
-        bytes32 tail;
+        Order head;
+        Order tail;
         uint256 size;
     }
 }

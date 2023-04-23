@@ -1,4 +1,5 @@
 pragma solidity 0.5.1;
+import "./interfaces/Structs.sol";
 
 /* 
 Hitchens Order Statistics Tree v0.99
@@ -42,6 +43,7 @@ library HitchensOrderStatisticsTreeLib {
     struct Node {
         uint parent;
         uint left;
+        LL ll;
         uint right;
         bool red;
         bytes32[] keys;
@@ -328,6 +330,7 @@ library HitchensOrderStatisticsTreeLib {
             self.nodes[cursor].count++;
         }
         Node storage nValue = self.nodes[value];
+        nValue.ll=EMPTY;
         nValue.parent = cursor;
         nValue.left = EMPTY;
         nValue.right = EMPTY;
