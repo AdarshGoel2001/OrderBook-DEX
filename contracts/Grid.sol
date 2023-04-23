@@ -18,6 +18,7 @@ contract Grid {
     address admin;
     uint256 daystart;
     address timeOracle;
+    mapping(address => bytes32[]) addressToOrder;
 
     constructor(address _timeOracle) {
         admin = msg.sender;
@@ -470,8 +471,9 @@ contract Grid {
     function addOrder(IGridStructs.Order memory order, bytes32 id) external {
         // Choose the correct tree based on whether the order is a buy or sell
         IGridStructs.Tree storage tree = order.isBuy ? buyTree : sellTree;
-
         orders[id] = order;
+        addressToOrder[order.trader].push(order.id); 
+
         // If the tree is empty, create a new node for the order
         if (tree.root == 0) {
             _insert(order.isBuy, 0x0, order.price);
@@ -523,12 +525,38 @@ contract Grid {
         return orders[id];
     }
 
+     function getOrdersForAddress(address trader) public view returns (bytes32[] memory) {
+        return addressToOrder[trader];
+    }
+
     function getCurrentPrice(bool isBuy) public view returns (uint) {
         if (isBuy) {
             return _treeMaximum(isBuy);
         }
         return _treeMinimum(isBuy);
     }
+
+    function IndexOf(bytes32[] memory  values, bytes32 value) public pure returns(uint) {
+    uint i = 0;
+    while (values[i] != value) {
+      i++;
+    }
+    return i;
+  }
+
+  /** Removes the given value in an array. */
+  function RemoveByValue(bytes32[] memory values, bytes32 value) public pure{
+    uint i = IndexOf(values,value);
+    RemoveByIndex(values,i);
+  }
+
+  /** Removes the value at the given index in an array. */
+  function RemoveByIndex(bytes32[] memory values, uint i) public pure{
+    while (i<values.length-1){
+      values[i] = values[i+1];
+      i++;
+    }
+  }
 
     // Function to delete an order from the order book
     function deleteOrder(bytes32 id, bool isTransaction) public onlyRouter {
@@ -540,6 +568,8 @@ contract Grid {
             orders[id].isBuy,
             orders[id].price
         );
+        RemoveByValue(addressToOrder[orders[id].trader],id);
+        addressToOrder[orders[id].trader].pop;
         // require(ll != 0, "Order not found");
 
         if (ll.size == 1) {
