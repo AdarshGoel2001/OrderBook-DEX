@@ -7,15 +7,19 @@
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const Grid = await hre.ethers.getContractFactory("Grid");
+  const grid = await Grid.deploy("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+  await grid.deployed();
 
-  const lockedAmount = hre.ethers.utils.parseEther("0.001");
+  const Router = await hre.ethers.getContractFactory("Router");
+  const router = await Router.deploy(
+    grid.address(),
+    "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
+  );
+  await router.deployed();
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-
-  await lock.deployed();
+  const txn = await grid.setRouter(router.address);
+  txn.wait();
 
   console.log(
     `Lock with ${ethers.utils.formatEther(
