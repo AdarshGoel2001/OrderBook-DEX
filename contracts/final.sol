@@ -187,11 +187,9 @@ contract test {
         }
     }
 
-    function _treeMinimum(
-        bool isBuy,
-        uint value
-    ) public view returns (uint price) {
+    function _treeMinimum(bool isBuy) public view returns (uint price) {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
+        uint value = self.root;
         while (self.nodes[value].left != EMPTY) {
             value = self.nodes[value].left;
         }
@@ -466,18 +464,15 @@ contract test {
 
     function getOrderByID(
         bytes32 id
-    ) internal returns (IGridStructs.Order memory) {
+    ) internal view returns (IGridStructs.Order memory) {
         return orders[id];
     }
 
-    function getCurrentPrice(bool isBuy) public returns (uint) {
-        IGridStructs.Node storage cur;
+    function getCurrentPrice(bool isBuy) public view returns (uint) {
         if (isBuy) {
-            cur = _treeMaximum(isBuy);
-            return cur.ll.head.price;
+            return _treeMaximum(isBuy);
         }
-        cur = _treeMinimum(sellTree);
-        return cur.ll.head.price;
+        return _treeMinimum(isBuy);
     }
 
     // Function to delete an order from the order book
@@ -486,23 +481,25 @@ contract test {
         IGridStructs.Tree storage tree = orders[id].isBuy ? buyTree : sellTree;
 
         // Find the node corresponding to the order price
-        IGridStructs.LL storage ll = _getNode(tree, orders[id].price);
+        IGridStructs.LL memory ll = _getNode(
+            orders[id].isBuy,
+            orders[id].price
+        );
         // require(ll != 0, "Order not found");
 
         if (ll.size == 1) {
-            _remove(tree, 0x0, orders[id].price);
+            _remove(orders[id].isBuy, 0x0, orders[id].price);
             delete orders[id]; // remove from map
-            return true;
         }
         // Find and remove the order from the linked list at the node
-        IGridStructs.Order storage curr = ll.head;
-        IGridStructs.Order storage prev = 0;
-        while (curr != 0 && curr.id != id) {
+        IGridStructs.Order memory curr = ll.head;
+        IGridStructs.Order memory prev;
+        while (curr.quantity != 0 && curr.id != id) {
             prev = curr;
             curr = orders[curr.next];
         }
         // require(curr != 0, "Order not found");
-        if (prev == 0) {
+        if (prev.quantity == 0) {
             ll.head = orders[curr.next];
         } else if (curr.next == 0) {
             prev.next = curr.next;
@@ -515,11 +512,11 @@ contract test {
         // If the linked list is now empty, delete the node from the tree
 
         // Rebalance the tree
-        tree.root = _removeFixup(tree, orders[id].price);
+        tree.root = _removeFixup(orders[id].isBuy, orders[id].price);
         if (orders[id].isTaker) {
             IERC20(usdc).transfer(
                 orders[id].trader,
-                orders[id].quantity * getCurrentPrice()
+                orders[id].quantity * getCurrentPrice(orders[id].isBuy)
             );
         } else {
             IERC20(usdc).transfer(
@@ -535,7 +532,6 @@ contract test {
         //     orderBook.rootSell = root;
         // }
         matchOrders();
-        return true;
     }
 
     // pragma solidity ^0.8.0;
@@ -727,18 +723,19 @@ contract test {
     // }
 
     function matchOrders() internal {
-        IGridStructs.Node storage sellNode = _treeMinimum(sellTree);
-        IGridStructs.Node storage buyNode = _treeMaximum(buyTree);
-        IGridStructs.LL storage sellNodeLL = sellNode.ll;
-        IGridStructs.LL storage buyNodeLL = buyNode.ll;
+        IGridStructs.LL memory sellNodeLL = _getNode(
+            false,
+            _treeMinimum(false)
+        );
+        IGridStructs.LL memory buyNodeLL = _getNode(true, _treeMaximum(true));
         // while (sellNode != 0 && buyNode != 0) {
         while (sellNodeLL.head.price <= buyNodeLL.head.price) {
             // If the sell price is less than or equal to the buy price, we have a match.
-            IGridStructs.Order storage sellOrder = sellNodeLL.head;
-            IGridStructs.Order storage buyOrder = buyNodeLL.head;
+            IGridStructs.Order memory sellOrder = sellNodeLL.head;
+            IGridStructs.Order memory buyOrder = buyNodeLL.head;
             uint lastSell;
             uint lastBuy;
-            while (sellOrder != 0 && buyOrder != 0) {
+            if (sellOrder.quantity != 0 && buyOrder.quantity != 0) {
                 if (sellOrder.quantity <= buyOrder.quantity) {
                     // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
                     // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
@@ -755,15 +752,13 @@ contract test {
                     buyOrder = buyNodeLL.head;
                 }
             }
-            if (sellNodeLL.head == 0) {
+            if (sellNodeLL.head.quantity == 0) {
                 // If all sell orders at this price have been matched, remove the node from the sell tree.
-                _remove(sellTree, 0x0, lastSell);
+                _remove(false, 0x0, lastSell);
             }
-            if (buyNodeLL.head == 0) {
-                _remove(buyTree, 0x0, lastBuy);
+            if (buyNodeLL.head.quantity == 0) {
+                _remove(true, 0x0, lastBuy);
             }
-            sellNode = _treeMinimum(sellTree);
-            buyNode = _treeMaximum(buyTree);
         }
         // }
     }
