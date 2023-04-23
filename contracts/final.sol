@@ -87,7 +87,7 @@ contract test is HitchensOrderStatisticsTreeLib {
     // Function to delete an order from the order book
     function deleteOrder(
         bytes32 id
-    ) private {
+    ) private returns(bool){
         // Choose the correct tree based on whether the order is a buy or sell
         Tree storage tree = orders[id].isBuy
             ? buyTree;
@@ -101,7 +101,7 @@ contract test is HitchensOrderStatisticsTreeLib {
         if(ll.size==1){
             _remove(tree, 0x0, orders[id].price);
             delete orders[id]; // remove from map
-            return;
+            return true;
         }
         // Find and remove the order from the linked list at the node
         Order storage curr = ll.head;
@@ -136,6 +136,7 @@ contract test is HitchensOrderStatisticsTreeLib {
         // } else {
         //     orderBook.rootSell = root;
         // }
+        return true;
     }
 
     // pragma solidity ^0.8.0;
