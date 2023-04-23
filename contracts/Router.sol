@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 pragma solidity >=0.8.0;
 
 import "./interfaces/IGrid.sol";
 import "./interfaces/IERC20.sol";
-import "contracts/interfaces/Structs.sol";
+import "./interfaces/Structs.sol";
 
 contract Router {
     address grid;
@@ -48,8 +50,8 @@ contract Router {
         bool _isBuy
     ) public returns (bytes32) {
         if (_isTaker) {
-            // uint256 currentPrice = gridContract.getCurrentPrice();
-            // _transferInUSDC(msg.sender, currentPrice * _shares);
+            uint256 currentPrice = gridContract.getCurrentPrice(_isBuy);
+            _transferInUSDC(msg.sender, currentPrice * _shares);
         } else {
             uint256 amount = _shares * _price;
             _transferInUSDC(msg.sender, amount);
@@ -67,32 +69,32 @@ contract Router {
         bytes32 id = keccak256(
             abi.encodePacked(order.trader, order.quantity, order.price)
         );
-        // order.id = id;
-        // gridContract.addOrder(order, id);
+        order.id = id;
+        gridContract.addOrder(order, id);
         return id;
     }
 
     function deleteOrder(bytes32 _id) public {
         IGridStructs.Order memory order;
-        // order = gridContract.getOrderByID(_id);
+        order = gridContract.getOrderByID(_id);
         require(
             order.trader == msg.sender,
             "Only the owner of the order can delete it."
         );
-        // gridContract.deleteOrder(_id);
+        gridContract.deleteOrder(_id);
     }
 
     function getOrderDetails() public {}
 
-    function getEXEbalance(address consumer) public returns (uint256) {
-        // return gridContract.exe(consumer);
+    function getEXEbalance(address consumer) public view returns (uint256) {
+        return gridContract.getExe(consumer);
     }
 
     function _transferInUSDC(address _user, uint256 _amount) internal {
         IERC20(usdc).transferFrom(_user, grid, _amount);
     }
 
-    function whitelist() onlyAdmin {
+    function whitelist() public onlyAdmin {
         gridContract.whitelist(msg.sender);
     }
 }

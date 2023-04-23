@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 pragma solidity ^0.8.0;
 
 // import "solidity-linked-list/contracts/StructuredLinkedList.sol";
@@ -8,31 +10,57 @@ import "./HitchensOrderStatisticsTreeLib.sol";
 contract test {
     IGridStructs.Tree buyTree;
     IGridStructs.Tree sellTree;
-     mapping (address=>uint256) exe;
-    mapping (address=>uint256) nextDayExe;
-    mapping (address=> bool ) whitelisted;
+    mapping(address => uint256) exe;
+    mapping(address => uint256) nextDayExe;
+    mapping(address => bool) whitelisted;
+    address[] whitelists;
     address router;
     address admin;
+    uint256 daystart;
+    address timeOracle;
 
-    constructor(address _router){
+    constructor(address _router, address _timeOracle) {
         router = _router;
         admin = msg.sender;
-        
+        timeOracle = _timeOracle;
     }
 
-    modifier onlyRouter (){
-        require(msg.sender == router, "You are not authorized to place orders directly");
+    modifier onlyRouter() {
+        require(
+            msg.sender == router,
+            "You are not authorized to place orders directly"
+        );
         _;
     }
-    
-    function setRouter(address _router) {
-       require(msg.sender == admin, "You are not authorized");
-        router = _router;
 
+    function updateTimeStamp(uint256 _daystart) public {
+        require(
+            msg.sender == timeOracle,
+            "You are not authorized to place orders directly"
+        );
+        daystart = _daystart;
     }
 
-    function whitelist(address _user) onlyRouter{
+    function updateAllEXEbalances() public {
+        require(block.timestamp >= daystart, "still time left");
+        for (uint256 i = 0; i < whitelists.length; i++) {
+            exe[whitelists[i]] = nextDayExe[whitelists[i]];
+            nextDayExe[whitelists[i]] = 0;
+        }
+    }
+
+    function setRouter(address _router) public {
+        require(msg.sender == admin, "You are not authorized");
+        router = _router;
+    }
+
+    function whitelist(address _user) public onlyRouter {
         whitelisted[_user] = true;
+        whitelists.push(_user);
+    }
+
+    function getExe(address _user) public view returns (uint256) {
+        return exe[_user];
     }
 
     function _exists(
@@ -413,7 +441,7 @@ contract test {
         return self.root;
     }
 
-    uint private 6ant EMPTY = 0;
+    uint private EMPTY = 0;
 
     mapping(bytes32 => IGridStructs.Order) public orders;
     address usdc = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
@@ -490,7 +518,7 @@ contract test {
 
     function getOrderByID(
         bytes32 id
-    ) internal view returns (IGridStructs.Order memory) {
+    ) public view returns (IGridStructs.Order memory) {
         return orders[id];
     }
 
@@ -502,7 +530,7 @@ contract test {
     }
 
     // Function to delete an order from the order book
-    function deleteOrder(bytes32 id) private {
+    function deleteOrder(bytes32 id) public onlyRouter {
         // Choose the correct tree based on whether the order is a buy or sell
         IGridStructs.Tree storage tree = orders[id].isBuy ? buyTree : sellTree;
 
@@ -766,14 +794,22 @@ contract test {
                     // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
                     // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
                     buyOrder.quantity -= sellOrder.quantity;
-                    lastSell = sellNodeLL.head.price;
+                    IERC20(usdc).transfer(
+                        sellOrder.trader,
+                        2 * sellOrder.quantity * buyOrder.price
+                    );
+                    nextDayExe[buyOrder.trader] += sellOrder.quantity;
                     deleteOrder(sellOrder.id);
                     sellOrder = sellNodeLL.head;
                 } else {
                     // Otherwise, the sell order is partially matched.
                     // emit Trade(sellOrder.user, buyOrder.user, buyOrder.quantity, sellNode.key);
                     sellOrder.quantity -= buyOrder.quantity;
-                    lastBuy = buyNodeLL.head.price;
+                    IERC20(usdc).transfer(
+                        sellOrder.trader,
+                        2 * buyOrder.quantity * buyOrder.price
+                    );
+                    nextDayExe[buyOrder.trader] += buyOrder.quantity;
                     deleteOrder(buyOrder.id);
                     buyOrder = buyNodeLL.head;
                 }
