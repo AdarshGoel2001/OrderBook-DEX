@@ -19,10 +19,15 @@ contract Grid {
     uint256 daystart;
     address timeOracle;
     mapping(address => bytes32[]) addressToOrder;
+    address usdc = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
 
     constructor(address _timeOracle) {
         admin = msg.sender;
         timeOracle = _timeOracle;
+    }
+
+    function getRootTree(bool isBuy) public view returns (uint256) {
+        return isBuy ? buyTree.root : sellTree.root;
     }
 
     modifier onlyRouter() {
@@ -63,6 +68,10 @@ contract Grid {
         return exe[_user];
     }
 
+    function getNextExe(address _user) public view returns (uint256) {
+        return nextDayExe[_user];
+    }
+
     function _exists(
         bool isBuy,
         uint value
@@ -89,10 +98,17 @@ contract Grid {
         uint value
     ) internal view returns (IGridStructs.LL memory ll) {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
-        require(
-            _exists(isBuy, value),
-            "OrderStatisticsTree(403) - Value does not exist."
-        );
+        // require(
+        //     _exists(isBuy, value),
+        //     "OrderStatisticsTree(403) - Value does not exist."
+        // );
+        if (!_exists(isBuy, value))
+            return
+                IGridStructs.LL(
+                    IGridStructs.Order(0, address(0), 0, false, 0, false, 0),
+                    IGridStructs.Order(0, address(0), 0, false, 0, false, 0),
+                    0
+                );
         IGridStructs.Node storage gn = self.nodes[value];
         return gn.ll;
     }
@@ -126,14 +142,15 @@ contract Grid {
 
     function _insert(bool isBuy, bytes32 key, uint value) internal {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
+        self.count++;
         require(
             value != EMPTY,
             "OrderStatisticsTree(405) - Value to insert cannot be zero"
         );
-        require(
-            !_keyExists(isBuy, key, value),
-            "OrderStatisticsTree(406) - Value and Key pair exists. Cannot be inserted again."
-        );
+        // require(
+        //     !_keyExists(isBuy, key, value),
+        //     "OrderStatisticsTree(406) - Value and Key pair exists. Cannot be inserted again."
+        // );
         uint cursor;
         uint probe = self.root;
         while (probe != EMPTY) {
@@ -169,18 +186,19 @@ contract Grid {
 
     function _remove(bool isBuy, bytes32 key, uint value) internal {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
+        self.count--;
         require(
             value != EMPTY,
             "OrderStatisticsTree(407) - Value to delete cannot be zero"
         );
-        require(
-            _keyExists(isBuy, key, value),
-            "OrderStatisticsTree(408) - Value to delete does not exist."
-        );
+        // require(
+        //     _keyExists(isBuy, key, value),
+        //     "OrderStatisticsTree(408) - Value to delete does not exist."
+        // );
         IGridStructs.Node storage nValue = self.nodes[value];
-        uint rowToDelete = nValue.keyMap[key];
-        nValue.keys[rowToDelete] = nValue.keys[nValue.keys.length - uint(1)];
-        nValue.keyMap[key] = rowToDelete;
+        // uint rowToDelete = nValue.keyMap[key];
+        // nValue.keys[rowToDelete] = nValue.keys[nValue.keys.length - uint(1)];
+        // nValue.keyMap[key] = rowToDelete;
         // nValue.keys.length--;
         uint probe;
         uint cursor;
@@ -444,7 +462,6 @@ contract Grid {
     uint private EMPTY = 0;
 
     mapping(bytes32 => IGridStructs.Order) public orders;
-    address usdc = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
 
     // struct Node {
     //         uint parent;
@@ -470,9 +487,15 @@ contract Grid {
     // Function to add an order to the order book
     function addOrder(IGridStructs.Order memory order, bytes32 id) external {
         // Choose the correct tree based on whether the order is a buy or sell
+        if (order.isTaker) {
+            orders[id] = order;
+            takerMatching(id);
+            matchOrders();
+            return;
+        }
         IGridStructs.Tree storage tree = order.isBuy ? buyTree : sellTree;
         orders[id] = order;
-        addressToOrder[order.trader].push(order.id); 
+        addressToOrder[order.trader].push(order.id);
 
         // If the tree is empty, create a new node for the order
         if (tree.root == 0) {
@@ -485,16 +508,16 @@ contract Grid {
             tree.nodes[tree.root].ll = _ll;
         } else {
             // Find the node corresponding to the order price or create a new node if it doesn't exist
+            // bool ex=_exists(order.isBuy, order.price);
+
             IGridStructs.LL memory ll = _getNode(order.isBuy, order.price);
 
             if (ll.size == 0) {
                 _insert(order.isBuy, 0x0, order.price);
-                IGridStructs.LL memory _ll = IGridStructs.LL({
-                    head: order,
-                    tail: order,
-                    size: 1
-                });
-                tree.nodes[tree.root].ll = _ll;
+                ll.head = order;
+                ll.tail = order;
+                ll.size = 1;
+                // tree.nodes[tree.root].ll = ll;
             } else {
                 ll.tail.next = id;
                 ll.tail = order;
@@ -513,9 +536,7 @@ contract Grid {
         // } else {
         //     orderBook.rootSell = root;
         // }
-        if(order.isTaker){
-            takerMatching(order.id);
-        }
+
         matchOrders();
     }
 
@@ -525,7 +546,9 @@ contract Grid {
         return orders[id];
     }
 
-     function getOrdersForAddress(address trader) public view returns (bytes32[] memory) {
+    function getOrdersForAddress(
+        address trader
+    ) public view returns (bytes32[] memory) {
         return addressToOrder[trader];
     }
 
@@ -536,27 +559,39 @@ contract Grid {
         return _treeMinimum(isBuy);
     }
 
-    function IndexOf(bytes32[] memory  values, bytes32 value) public pure returns(uint) {
-    uint i = 0;
-    while (values[i] != value) {
-      i++;
+    function IndexOf(
+        bytes32[] memory values,
+        bytes32 value
+    ) public pure returns (uint) {
+        uint i = 0;
+        while (i < values.length && values[i] != value) {
+            i++;
+        }
+        return i;
     }
-    return i;
-  }
 
-  /** Removes the given value in an array. */
-  function RemoveByValue(bytes32[] memory values, bytes32 value) public pure{
-    uint i = IndexOf(values,value);
-    RemoveByIndex(values,i);
-  }
-
-  /** Removes the value at the given index in an array. */
-  function RemoveByIndex(bytes32[] memory values, uint i) public pure{
-    while (i<values.length-1){
-      values[i] = values[i+1];
-      i++;
+    /** Removes the given value in an array. */
+    function RemoveByValue(bytes32[] memory values, bytes32 value) public pure {
+        uint i = IndexOf(values, value);
+        RemoveByIndex(values, i);
     }
-  }
+
+    /** Removes the value at the given index in an array. */
+    function RemoveByIndex(bytes32[] memory values, uint i) public pure {
+        unchecked {
+            while (i < values.length - 1) {
+                values[i] = values[i + 1];
+                i++;
+            }
+        }
+    }
+
+    function getAvCurrentPrice() public view returns (uint256) {
+        if (buyTree.count == 0 && sellTree.count == 0) return 0;
+        if (buyTree.count == 0) return getCurrentPrice(false);
+        if (sellTree.count == 0) return getCurrentPrice(true);
+        return ((_treeMinimum(false) + _treeMaximum(true)) / 2);
+    }
 
     // Function to delete an order from the order book
     function deleteOrder(bytes32 id, bool isTransaction) public onlyRouter {
@@ -568,7 +603,7 @@ contract Grid {
             orders[id].isBuy,
             orders[id].price
         );
-        RemoveByValue(addressToOrder[orders[id].trader],id);
+        RemoveByValue(addressToOrder[orders[id].trader], id);
         addressToOrder[orders[id].trader].pop;
         // require(ll != 0, "Order not found");
 
@@ -598,18 +633,18 @@ contract Grid {
 
         // Rebalance the tree
         tree.root = _removeFixup(orders[id].isBuy, orders[id].price);
-        if(isTransaction){
-        if (orders[id].isTaker) {
-            IERC20(usdc).transfer(
-                orders[id].trader,
-                orders[id].quantity * getCurrentPrice(orders[id].isBuy)
-            );
-        } else {
-            IERC20(usdc).transfer(
-                orders[id].trader,
-                orders[id].quantity * orders[id].price
-            );
-        }
+        if (isTransaction) {
+            if (orders[id].isTaker) {
+                IERC20(usdc).transfer(
+                    orders[id].trader,
+                    orders[id].quantity * getCurrentPrice(orders[id].isBuy)
+                );
+            } else {
+                IERC20(usdc).transfer(
+                    orders[id].trader,
+                    orders[id].quantity * orders[id].price
+                );
+            }
         }
         delete orders[id]; // remove from map
 
@@ -812,41 +847,59 @@ contract Grid {
     function takerMatching(bytes32 id) internal {
         IGridStructs.Order memory order = getOrderByID(id);
         if (order.isBuy) {
+            if (sellTree.count == 0) return;
             IGridStructs.LL memory sellNodeLL = _getNode(
                 false,
                 _treeMinimum(false)
             );
             if (sellNodeLL.head.quantity > order.quantity) {
                 sellNodeLL.head.quantity -= order.quantity;
-                deleteOrder(order.id,false);
+                IERC20(usdc).transfer(
+                    sellNodeLL.head.trader,
+                    2 * order.quantity * sellNodeLL.head.price
+                );
+                nextDayExe[order.trader] += order.quantity;
                 return;
             } else {
-                while (order.quantity > 0) {
+                while (order.quantity > 0 && (sellTree.count != 0)) {
                     order.quantity -= sellNodeLL.head.quantity;
-                    deleteOrder(sellNodeLL.head.id,false);
+                    IERC20(usdc).transfer(
+                        sellNodeLL.head.trader,
+                        2 * sellNodeLL.head.quantity * sellNodeLL.head.price
+                    );
+                    nextDayExe[order.trader] += sellNodeLL.head.quantity;
+                    deleteOrder(sellNodeLL.head.id, false);
                     sellNodeLL = _getNode(false, _treeMinimum(false));
                 }
             }
         } else {
+            if (buyTree.count == 0) return;
             IGridStructs.LL memory buyNodeLL = _getNode(
                 true,
                 _treeMaximum(true)
             );
             if (buyNodeLL.head.quantity > order.quantity) {
                 buyNodeLL.head.quantity -= order.quantity;
-                deleteOrder(order.id,false);
+                IERC20(usdc).transfer(
+                    order.trader,
+                    2 * buyNodeLL.head.price * order.quantity
+                );
+                nextDayExe[buyNodeLL.head.trader] += order.quantity;
+                deleteOrder(order.id, false);
                 return;
             } else {
-                while (order.quantity > 0) {
+                while (order.quantity > 0 && (buyTree.count != 0)) {
                     order.quantity -= buyNodeLL.head.quantity;
-                    deleteOrder(buyNodeLL.head.id,false);
+                    deleteOrder(buyNodeLL.head.id, false);
                     buyNodeLL = _getNode(false, _treeMinimum(false));
                 }
             }
         }
+        delete orders[id];
     }
 
     function matchOrders() internal {
+        if (buyTree.root == 0 || sellTree.root == 0) return;
         IGridStructs.LL memory sellNodeLL = _getNode(
             false,
             _treeMinimum(false)
@@ -869,7 +922,7 @@ contract Grid {
                         2 * sellOrder.quantity * buyOrder.price
                     );
                     nextDayExe[buyOrder.trader] += sellOrder.quantity;
-                    deleteOrder(sellOrder.id,false);
+                    deleteOrder(sellOrder.id, false);
                     sellOrder = sellNodeLL.head;
                 } else {
                     // Otherwise, the sell order is partially matched.
@@ -880,7 +933,7 @@ contract Grid {
                         2 * buyOrder.quantity * buyOrder.price
                     );
                     nextDayExe[buyOrder.trader] += buyOrder.quantity;
-                    deleteOrder(buyOrder.id,false);
+                    deleteOrder(buyOrder.id, false);
                     buyOrder = buyNodeLL.head;
                 }
             }
