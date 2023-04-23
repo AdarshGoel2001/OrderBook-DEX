@@ -90,24 +90,24 @@ library HitchensOrderStatisticsTreeLib {
         }
     }
 
-    function _prev(
-        Tree storage self,
-        uint value
-    ) internal view returns (uint _cursor) {
-        require(
-            value != EMPTY,
-            "OrderStatisticsTree(402) - Starting value cannot be zero"
-        );
-        if (self.nodes[value].left != EMPTY) {
-            _cursor = _treeMaximum(self, self.nodes[value].left);
-        } else {
-            _cursor = self.nodes[value].parent;
-            while (_cursor != EMPTY && value == self.nodes[_cursor].left) {
-                value = _cursor;
-                _cursor = self.nodes[_cursor].parent;
-            }
-        }
-    }
+    // function _prev(
+    //     Tree storage self,
+    //     uint value
+    // ) internal view returns (uint _cursor) {
+    //     require(
+    //         value != EMPTY,
+    //         "OrderStatisticsTree(402) - Starting value cannot be zero"
+    //     );
+    //     if (self.nodes[value].left != EMPTY) {
+    //         _cursor = _treeMaximum(self, self.nodes[value].left);
+    //     } else {
+    //         _cursor = self.nodes[value].parent;
+    //         while (_cursor != EMPTY && value == self.nodes[_cursor].left) {
+    //             value = _cursor;
+    //             _cursor = self.nodes[_cursor].parent;
+    //         }
+    //     }
+    // }
 
     function _exists(
         Tree storage self,
@@ -407,21 +407,25 @@ library HitchensOrderStatisticsTreeLib {
     function _treeMinimum(
         Tree storage self,
         uint value
-    ) private view returns (uint) {
+    ) private view returns (Node) {
+        Node cur = self.nodes[value];
         while (self.nodes[value].left != EMPTY) {
             value = self.nodes[value].left;
+            cur = self.nodes[value];
         }
-        return value;
+        return cur;
     }
 
     function _treeMaximum(
         Tree storage self,
         uint value
-    ) private view returns (uint) {
+    ) private view returns (Node) {
+        Node cur = self.nodes[value];
         while (self.nodes[value].right != EMPTY) {
             value = self.nodes[value].right;
+            cur = self.nodes[value];
         }
-        return value;
+        return cur;
     }
 
     function _rotateLeft(Tree storage self, uint value) private {

@@ -327,42 +327,43 @@ contract test is HitchensOrderStatisticsTreeLib {
     //     return node.price;
     // }
 
-    function matchOrders(OrderBook storage orderBook) internal {
-        Node storage sellNode = orderBook.rootSell;
-        Node storage buyNode = orderBook.rootBuy;
-
-        sellNode = findMinPrice(sellNode);
-        buyNode = findMaxPrice(buyNode);
-
+    function matchOrders() internal {
+        Node sellNode = _treeMinimum(sellTree);
+        Node buyNode = _treeMaximum(buyTree);
+        LL sellNodeLL = sellNode.ll;
+        LL buyNodeLL = buyNode.ll;
         // while (sellNode != 0 && buyNode != 0) {
-        if (sellNode.key <= buyNode.key) {
+        while (sellNodeLL.head.price <= buyNodeLL.head.price) {
             // If the sell price is less than or equal to the buy price, we have a match.
-            Order storage sellOrder = sellNode.head;
-            Order storage buyOrder = buyNode.head;
+            Order storage sellOrder = sellNodeLL.head;
+            Order storage buyOrder = buyNodeLL.head;
             while (sellOrder != 0 && buyOrder != 0) {
                 if (sellOrder.quantity <= buyOrder.quantity) {
                     // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
                     // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
                     buyOrder.quantity -= sellOrder.quantity;
-                    deleteOrder(sellOrder, orderBook);
-                    sellOrder = sellNode.head;
+                    uint lastSell = sellNodeLL.head.price;
+                    deleteOrder(sellOrder.id);
+                    sellOrder = sellNodeLL.head;
                 } else {
                     // Otherwise, the sell order is partially matched.
                     // emit Trade(sellOrder.user, buyOrder.user, buyOrder.quantity, sellNode.key);
                     sellOrder.quantity -= buyOrder.quantity;
-                    deleteOrder(buyOrder, orderBook);
-                    buyOrder = buyNode.head;
+                    uint lastBuy = buyNodeLL.head.price;
+                    deleteOrder(buyOrder.id);
+                    buyOrder = buyNodeLL.head;
                 }
             }
-            if (sellNode.head == 0) {
+            if (sellNodeLL.head == 0) {
                 // If all sell orders at this price have been matched, remove the node from the sell tree.
-                deleteNode(sellNode.key, false, orderBook);
+                _remove(sellTree, 0x0, lastSell);
             }
-            sellNode = orderBook.rootSell;
-        } else {
-            // If the sell price is greater than the buy price, move to the next highest buy price.
-            buyNode = getSuccessor(buyNode);
-        }
+            if(buyNodeLL.head == 0){
+                _remove(buyTree, 0x0, lastBuy);
+            }
+            sellNode = _treeMinimum(sellTree);
+            buyNode = _treeMaximum(buyTree);
+        } 
         // }
     }
 }
