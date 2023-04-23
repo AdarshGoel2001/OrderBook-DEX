@@ -2,6 +2,7 @@ pragma solidity >=0.8.0;
 
 import "./interfaces/IGrid.sol";
 import "./interfaces/IERC20.sol";
+import "contracts/interfaces/Structs.sol";
 
 contract Router {
     address grid;
@@ -41,18 +42,29 @@ contract Router {
     }
 
     function placeOrder(
-        uint256 shares,
-        uint256 price,
-        bool isTaker,
-        bool isBuy
+        uint256 _shares,
+        bool _isTaker,
+        uint256 _price,
+        bool _isBuy
     ) public {
-        if (isTaker) {
+        if (_isTaker) {
             uint256 currentPrice = gridContract.getCurrentPrice();
-            _transferInUSDC(msg.sender, currentPrice * shares);
+            _transferInUSDC(msg.sender, currentPrice * _shares);
         } else {
-            uint256 amount = shares * price;
+            uint256 amount = _shares * _price;
             _transferInUSDC(msg.sender, amount);
         }
+
+        Order memory order = Order({
+            trader: msg.sender,
+            quantity: _shares,
+            isTaker: _isTaker,
+            price: _price,
+            isBuy: _isBuy,
+            next: 0
+        });
+        bytes32 id = sha3(order);
+        gridContract.addOrder(order, id);
     }
 
     function deleteOrder() public {}
