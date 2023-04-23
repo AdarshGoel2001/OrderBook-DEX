@@ -46,16 +46,17 @@ contract Router {
         bool _isTaker,
         uint256 _price,
         bool _isBuy
-    ) public {
+    ) public returns (bytes32) {
         if (_isTaker) {
-            uint256 currentPrice = gridContract.getCurrentPrice();
-            _transferInUSDC(msg.sender, currentPrice * _shares);
+            // uint256 currentPrice = gridContract.getCurrentPrice();
+            // _transferInUSDC(msg.sender, currentPrice * _shares);
         } else {
             uint256 amount = _shares * _price;
             _transferInUSDC(msg.sender, amount);
         }
 
-        Order memory order = Order({
+        IGridStructs.Order memory order = IGridStructs.Order({
+            id: 0,
             trader: msg.sender,
             quantity: _shares,
             isTaker: _isTaker,
@@ -63,21 +64,33 @@ contract Router {
             isBuy: _isBuy,
             next: 0
         });
-        bytes32 id = sha3(order);
-        gridContract.addOrder(order, id);
+        bytes32 id = keccak256(
+            abi.encodePacked(order.trader, order.quantity, order.price)
+        );
+        // order.id = id;
+        // gridContract.addOrder(order, id);
+        return id;
     }
 
-    function deleteOrder() public {}
+    function deleteOrder(bytes32 _id) public {
+        IGridStructs.Order memory order;
+        // order = gridContract.getOrderByID(_id);
+        require(
+            order.trader == msg.sender,
+            "Only the owner of the order can delete it."
+        );
+        // gridContract.deleteOrder(_id);
+    }
 
     function updateOrder() public {}
 
     function getOrderDetails() public {}
 
     function getEXEbalance(address consumer) public returns (uint256) {
-        return gridContract.getEXEbalance(consumer);
+        // return gridContract.getEXEbalance(consumer);
     }
 
     function _transferInUSDC(address _user, uint256 _amount) internal {
-        IERC20(usdc).transferfrom(_user, grid, _amount);
+        IERC20(usdc).transferFrom(_user, grid, _amount);
     }
 }

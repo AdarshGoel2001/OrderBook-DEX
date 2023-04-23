@@ -1,29 +1,26 @@
-pragma solidity ^0.8.0; 
+pragma solidity ^0.8.0;
 
 import "./HitchensOrderStatisticsTreeLib.sol";
 // import "solidity-linked-list/contracts/StructuredLinkedList.sol";
-import "contracts/interfaces/Structs.sol";
-
+import "./interfaces/Structs.sol";
+import "./interfaces/IERC20.sol";
 
 contract test is HitchensOrderStatisticsTreeLib {
-
-    
     // global vars
-    mapping (bytes32 => Order) public orders;
+    mapping(bytes32 => IGridStructs.Order) public orders;
     Tree buyTree;
-    Tree sellTree;   
+    Tree sellTree;
+    address usdc = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
 
-
-// struct Node {
-//         uint parent;
-//         uint left;
-//         uint right;
-//         bool red;
-//         bytes32[] keys;
-//         mapping(bytes32 => uint) keyMap;
-//         uint count;
-//     }
-
+    // struct Node {
+    //         uint parent;
+    //         uint left;
+    //         uint right;
+    //         bool red;
+    //         bytes32[] keys;
+    //         mapping(bytes32 => uint) keyMap;
+    //         uint count;
+    //     }
 
     // function addOrderToLL(Order memory order, LL ll) public returns (bool){
     //     if(ll==0){
@@ -37,32 +34,27 @@ contract test is HitchensOrderStatisticsTreeLib {
     // }
 
     // Function to add an order to the order book
-    function addOrder(
-        Order memory order, bytes32 id
-    ) external {
+    function addOrder(IGridStructs.Order memory order, bytes32 id) external {
         // Choose the correct tree based on whether the order is a buy or sell
-        Tree storage tree = order.isBuy
-            ? buyTree
-            : sellTree;
+        Tree storage tree = order.isBuy ? buyTree : sellTree;
 
-        orders[id]=order;
+        orders[id] = order;
         // If the tree is empty, create a new node for the order
         if (tree.root == 0) {
             _insert(tree, 0x0, order.price);
-            LL memory _ll= LL({head:order, tail:order, size:1})
-            nodes[tree.root].ll=_ll;
+            LL memory _ll = LL({head: order, tail: order, size: 1});
+            nodes[tree.root].ll = _ll;
         } else {
             // Find the node corresponding to the order price or create a new node if it doesn't exist
             LL ll = _getNode(root, order.price);
 
             if (ll == 0) {
                 node = _insert(tree, 0x0, order.price);
-                LL memory _ll= LL({head:order, tail:order, size:1})
-                nodes[tree.root].ll=_ll;
-            }
-            else{
-                ll.tail.next=id;
-                ll.tail=order;
+                LL memory _ll = LL({head: order, tail: order, size: 1});
+                nodes[tree.root].ll = _ll;
+            } else {
+                ll.tail.next = id;
+                ll.tail = order;
                 ll.size++;
             }
 
@@ -72,7 +64,7 @@ contract test is HitchensOrderStatisticsTreeLib {
         }
 
         // Rebalance the tree
-        tree.root=_insertFixup(tree, order.price);
+        tree.root = _insertFixup(tree, order.price);
         // if (order.isBuy) {
         //     orderBook.rootBuy = root;
         // } else {
@@ -82,34 +74,31 @@ contract test is HitchensOrderStatisticsTreeLib {
         matchOrders();
     }
 
-    function getOrderByID(bytes32 id) internal returns(Order){
+    function getOrderByID(
+        bytes32 id
+    ) internal returns (IGridStructs.Order memory) {
         return orders[id];
     }
 
-    function getCurrentPrice(bool isBuy) returns(uint){
-        if(isBuy){
-            Node cur=_treeMaximum(buyTree);
+    function getCurrentPrice(bool isBuy) returns (uint) {
+        if (isBuy) {
+            Node cur = _treeMaximum(buyTree);
             return cur.ll.head.price;
         }
-        Node cur=_treeMinimum(sellTree);
+        Node cur = _treeMinimum(sellTree);
         return cur.ll.head.price;
     }
 
     // Function to delete an order from the order book
-    function deleteOrder(
-        bytes32 id
-    ) private returns(bool){
+    function deleteOrder(bytes32 id) private {
         // Choose the correct tree based on whether the order is a buy or sell
-        Tree storage tree = orders[id].isBuy
-            ? buyTree;
-            : sellTree;
+        Tree storage tree = orders[id].isBuy ? buyTree : sellTree;
 
         // Find the node corresponding to the order price
         LL ll = _getNode(tree, orders[id].price);
         // require(ll != 0, "Order not found");
 
-
-        if(ll.size==1){
+        if (ll.size == 1) {
             _remove(tree, 0x0, orders[id].price);
             delete orders[id]; // remove from map
             return true;
@@ -124,23 +113,30 @@ contract test is HitchensOrderStatisticsTreeLib {
         // require(curr != 0, "Order not found");
         if (prev == 0) {
             ll.head = orders[curr.next];
-        } 
-        else if(curr.next==0){
+        } else if (curr.next == 0) {
             prev.next = curr.next;
-            ll.tail=prev;
-        }
-        else {
+            ll.tail = prev;
+        } else {
             prev.next = curr.next;
         }
         delete curr;
         ll.size--;
         // If the linked list is now empty, delete the node from the tree
 
-
         // Rebalance the tree
         tree.root = _removeFixup(tree, orders[id].price);
+        if (orders[id].isTaker) {
+            IERC20(usdc).transfer(
+                orders[id].trader,
+                orders[id].quantity * getCurrentPrice()
+            );
+        } else {
+            IERC20(usdc).transfer(
+                orders[id].trader,
+                orders[id].quantity * orders[id].price
+            );
+        }
         delete orders[id]; // remove from map
-
 
         // if (order.isBuy) {
         //     orderBook.rootBuy = root;
@@ -370,12 +366,12 @@ contract test is HitchensOrderStatisticsTreeLib {
                 // If all sell orders at this price have been matched, remove the node from the sell tree.
                 _remove(sellTree, 0x0, lastSell);
             }
-            if(buyNodeLL.head == 0){
+            if (buyNodeLL.head == 0) {
                 _remove(buyTree, 0x0, lastBuy);
             }
             sellNode = _treeMinimum(sellTree);
             buyNode = _treeMaximum(buyTree);
-        } 
+        }
         // }
     }
 }
