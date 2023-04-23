@@ -775,6 +775,43 @@ contract Grid {
     //     return node.price;
     // }
 
+    function takerMatching(bytes32 id) internal {
+        IGridStructs.Order memory order = getOrderByID(id);
+        if (order.isBuy) {
+            IGridStructs.LL memory sellNodeLL = _getNode(
+                false,
+                _treeMinimum(false)
+            );
+            if (sellNodeLL.head.quantity > order.quantity) {
+                sellNodeLL.head.quantity -= order.quantity;
+                deleteOrder(order.id);
+                return;
+            } else {
+                while (order.quantity > 0) {
+                    order.quantity -= sellNodeLL.head.quantity;
+                    deleteOrder(sellNodeLL.head.id);
+                    sellNodeLL = _getNode(false, _treeMinimum(false));
+                }
+            }
+        } else {
+            IGridStructs.LL memory buyNodeLL = _getNode(
+                true,
+                _treeMaximum(true)
+            );
+            if (buyNodeLL.head.quantity > order.quantity) {
+                buyNodeLL.head.quantity -= order.quantity;
+                deleteOrder(order.id);
+                return;
+            } else {
+                while (order.quantity > 0) {
+                    order.quantity -= buyNodeLL.head.quantity;
+                    deleteOrder(buyNodeLL.head.id);
+                    buyNodeLL = _getNode(false, _treeMinimum(false));
+                }
+            }
+        }
+    }
+
     function matchOrders() internal {
         IGridStructs.LL memory sellNodeLL = _getNode(
             false,
