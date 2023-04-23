@@ -134,28 +134,14 @@ library HitchensOrderStatisticsTreeLib {
     )
         internal
         view
-        returns (
-            uint _parent,
-            uint _left,
-            uint _right,
-            bool _red,
-            uint keyCount,
-            uint count
-        )
+        returns LL ll
     {
         require(
             _exists(self, value),
             "OrderStatisticsTree(403) - Value does not exist."
         );
         Node storage gn = self.nodes[value];
-        return (
-            gn.parent,
-            gn.left,
-            gn.right,
-            gn.red,
-            gn.keys.length,
-            gn.keys.length + gn.count
-        );
+        return gn.ll;
     }
 
     function _getNodeCount(
@@ -490,7 +476,7 @@ library HitchensOrderStatisticsTreeLib {
             _getNodeCount(self, self.nodes[cursor].right);
     }
 
-    function _insertFixup(Tree storage self, uint value) private {
+    function _insertFixup(Tree storage self, uint value) private returns(uint){
         uint cursor;
         while (value != self.root && self.nodes[self.nodes[value].parent].red) {
             uint valueParent = self.nodes[value].parent;
@@ -533,6 +519,7 @@ library HitchensOrderStatisticsTreeLib {
             }
         }
         self.nodes[self.root].red = false;
+        return self.root;
     }
 
     function _replaceParent(Tree storage self, uint a, uint b) private {
@@ -549,7 +536,7 @@ library HitchensOrderStatisticsTreeLib {
         }
     }
 
-    function _removeFixup(Tree storage self, uint value) private {
+    function _removeFixup(Tree storage self, uint value) private returns(uint){
         uint cursor;
         while (value != self.root && !self.nodes[value].red) {
             uint valueParent = self.nodes[value].parent;
@@ -610,5 +597,7 @@ library HitchensOrderStatisticsTreeLib {
             }
         }
         self.nodes[value].red = false;
+
+        return self.root;
     }
 }

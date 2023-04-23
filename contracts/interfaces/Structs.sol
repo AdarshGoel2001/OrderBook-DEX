@@ -3,6 +3,7 @@ pragma solidity >=^0.8.0;
 
 interface IGridStructs {
     struct Order {
+        uint id;
         address trader;
         uint256 quantity;
         bool isTaker;
