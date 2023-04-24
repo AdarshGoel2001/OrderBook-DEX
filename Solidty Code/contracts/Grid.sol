@@ -967,14 +967,19 @@ contract Grid {
             } else {
                 uint256 amount2;
                 uint256 amount3;
+                bool check = true;
                 while (order.quantity > 0 && (sellTree.count != 0)) {
-                    if (order.quantity > sellNodeLL.head.quantity)
+                    if (order.quantity > sellNodeLL.head.quantity) {
                         order.quantity -= sellNodeLL.head.quantity;
-                    else {
+                        amount3 = sellNodeLL.head.quantity;
+                        check = true;
+                    } else {
                         amount3 = order.quantity;
                         sellNodeLL.head.quantity -= amount3;
+                        order.quantity = 0;
+                        check = false;
                     }
-                    uint256 amount = ((sellNodeLL.head.quantity - amount3) *
+                    uint256 amount = ((amount3) *
                         sellNodeLL.head.price *
                         (1000 - makerFee)) / 1000;
 
@@ -983,17 +988,17 @@ contract Grid {
                     }("");
                     require(success1, "Transfer failed.");
                     amount2 +=
-                        ((sellNodeLL.head.quantity - amount3) *
+                        ((amount3) *
                             sellNodeLL.head.price *
                             (1000 - takerFee)) /
                         1000;
 
-                    nextDayExe[order.trader] += sellNodeLL.head.quantity;
-                    if (amount3 == 0) deleteOrder(sellNodeLL.head.id, false);
+                    nextDayExe[order.trader] += amount3;
+                    if (check) deleteOrder(sellNodeLL.head.id, false);
                     sellNodeLL = _getNode(false, _treeMinimum(false));
                 }
                 (bool success, ) = order.trader.call{
-                    value: order.price - amount2
+                    value: (order.price - amount2)
                 }("");
                 require(success, "Transfer failed.");
             }
@@ -1005,38 +1010,41 @@ contract Grid {
             );
             if (buyNodeLL.head.quantity > order.quantity) {
                 buyNodeLL.head.quantity -= order.quantity;
-                IERC20(usdc).transfer(
-                    order.trader,
-                    2 *
-                        buyNodeLL.head.price *
-                        order.quantity -
-                        (takerFee * order.quantity) /
-                        1000
-                );
-                uint256 amount = 1;
 
-                nextDayExe[buyNodeLL.head.trader] += order.quantity;
-                deleteOrder(order.id, false);
+                uint amount = order.price -
+                    (order.quantity * buyNodeLL.head.price) -
+                    ((order.quantity * buyNodeLL.head.price * takerFee) / 1000);
+
+                (bool success, ) = order.trader.call{value: amount}("");
+                require(success, "Transfer failed.");
+                nextDayExe[order.trader] += order.quantity;
                 return;
             } else {
                 uint amount2;
                 uint amount3;
-                while (order.quantity > 0 && (buyTree.count != 0)) {
-                    if (order.quantity > buyNodeLL.head.quantity)
+                bool check = true;
+                while (order.quantity > 0 && (sellTree.count != 0)) {
+                    if (order.quantity > buyNodeLL.head.quantity) {
                         order.quantity -= buyNodeLL.head.quantity;
-                    else {
+                        amount3 = buyNodeLL.head.quantity;
+                        check = true;
+                    } else {
                         amount3 = order.quantity;
                         buyNodeLL.head.quantity -= amount3;
+                        order.quantity = 0;
+                        check = false;
                     }
                     amount2 +=
-                        ((buyNodeLL.head.quantity - amount3) *
-                            buyNodeLL.head.price *
-                            (1000 - makerFee)) /
+                        ((amount3) * buyNodeLL.head.price * (1000 - takerFee)) /
                         1000;
-                    if (amount3 == 0) deleteOrder(buyNodeLL.head.id, false);
+
+                    nextDayExe[order.trader] += amount3;
+                    if (check) deleteOrder(buyNodeLL.head.id, false);
                     buyNodeLL = _getNode(false, _treeMinimum(false));
                 }
-                (bool success, ) = order.trader.call{value: amount2}("");
+                (bool success, ) = order.trader.call{
+                    value: (order.price - amount2)
+                }("");
                 require(success, "Transfer failed.");
             }
         }
@@ -1044,7 +1052,7 @@ contract Grid {
     }
 
     function matchOrders() internal {
-        if (buyTree.root == 0 || sellTree.root == 0) return;
+        if (buyTree.count == 0 || sellTree.count == 0) return;
         IGridStructs.LL memory sellNodeLL = _getNode(
             false,
             _treeMinimum(false)
