@@ -315,6 +315,20 @@ async function main() {
     .approve(router.address, ethers.utils.parseUnits("3000", 6));
   const txn7 = await router.connect(account1).placeOrder(50, false, 60, false);
   txn7.wait();
+  const kh = await usdcContract
+    .connect(account1)
+    .approve(router.address, ethers.utils.parseUnits("3000", 6));
+  const txyfn7 = await router
+    .connect(account1)
+    .placeOrder(50, false, 60, false);
+  txyfn7.wait();
+  const thvamt = await usdcContract
+    .connect(account1)
+    .approve(router.address, ethers.utils.parseUnits("3000", 6));
+  const txkfn7 = await router
+    .connect(account1)
+    .placeOrder(50, false, 60, false);
+  txkfn7.wait();
   const currr = await grid.getAvCurrentPrice().then((res) => console.log(res));
 
   const curr = await grid.getAvCurrentPrice().then((res) => res.toString());
@@ -339,6 +353,12 @@ async function main() {
   const txn9e = await router.connect(account3).placeOrder(50, false, 60, true);
   txn9.wait();
   const tru = await grid.getAvCurrentPrice().then((res) => console.log(res));
+
+  console.log("aaaaannnnneeeee WAAALALALAL AHAIOAIAIAIIAA");
+
+  const uvikv = await grid
+    .getOrdersForAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+    .then((res) => console.log(res));
 
   const sdf = await router
     .whitelist("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
@@ -372,10 +392,7 @@ async function main() {
   const sr = await grid
     .updateAllEXEbalances()
     .then((res) => console.log("wohoo"));
-    const ssss = await grid
-    .inOrderSell()
-    .then((res) => console.log(res));
-
+  const ssss = await grid.inOrderSell().then((res) => console.log(res));
 }
 
 // We recommend this pattern to be able to use async/await everywhere
