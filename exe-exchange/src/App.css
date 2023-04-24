@@ -1,0 +1,239 @@
+/* Navbar */
+* {
+  margin: 0;
+  color: white;
+  font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', 'Geneva', Verdana, sans-serif;
+}
+
+body {
+  background-color: #07060A;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px 50px;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+}
+.company-logo {
+  height: 50px;
+}
+.company-name {
+  font-size: 16px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.left-section, .nav-links {
+  display: flex;
+  text-decoration: none;
+  list-style: none;
+  align-items: center;
+}
+.nav-link {
+  padding: 0px 30px;
+}
+.nav-link:hover {
+  cursor: pointer;
+}
+.shadow:hover {
+  color: #5fbf80;
+  box-shadow: 0px 0px 30px -5px #5fbf80;
+}
+
+.metamask-logo {
+  height: 30px;
+  background: transparent;
+  padding: 5px 10px;;
+}
+
+.metamask-connect {
+  padding: 5px 20px;
+  display: flex;
+  align-items: center;
+  border-radius: 50px;
+  background: transparent;
+  transition: 500ms;
+  cursor: pointer;
+  border: none;
+  font-weight: 600;
+  border: 2px solid #5fbf80;
+}
+
+.borderGreen:hover {
+  background-color: none !important;
+}
+
+.metamask-connect:active {
+  border: 2px solid #45a266;
+}
+
+.metamask-connect:hover {
+  border: 2px solid #5fbf80;
+  box-shadow: 0px 0px 30px -5px #5fbf81;
+  background-color: #5fbf80;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  margin: 30px 100px;
+}
+.hero-left>p {
+  font-size: 20px;
+  margin-top: 30px;
+  width: 500px;
+}
+.heading {
+  width: 300px;
+  margin-top: 100px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 300;
+  font-size: 72px;
+}
+.heroImage {
+  height: 800px;
+}
+
+.heroButton {
+  margin-top: 50px;
+  background-color: #5fbf80;
+  padding: 12px 80px;
+}
+
+a {
+  text-decoration: none;
+}
+
+.trade {
+  margin: 50px 30px 50px 0;
+  display: flex;
+}
+
+.tradeBlock {
+  display: flex;
+  flex-direction: column;
+  width: 33vw;
+  align-items: center;
+  border: 1px solid white;
+  border-radius: 30px;
+  margin-left: 30px;
+  padding: 50px 0;
+  transition: 500ms;
+}
+
+.tradeBlock2 {
+  height: max-content;
+}
+
+.tradeBlock3 {
+  display: flex;
+  flex-direction: column;
+  width: 33vw;
+  height: fit-content;
+  align-items: center;
+  border: 1px solid white;
+  border-radius: 30px;
+  margin-left: 30px;
+  padding: 50px 0;
+}
+.selectorBlock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20px 0;
+  width: 90%;
+}
+.selectorBlock3 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  margin: 20px 0;
+  width: 90%;
+}
+
+.selectorBlock::after {
+  background-color: black;
+}
+
+.selector {
+  background-color: #07060A;
+  border: 2px solid white;
+  padding: 10px 40px;
+  font-size: 12px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.selectorLeft {
+  border-top-left-radius: 50px;
+  border-bottom-left-radius: 50px;
+  border-right: 1px white solid;
+}
+.selectorRight {
+  border-top-right-radius: 50px;
+  border-bottom-right-radius: 50px;
+}
+
+.input {
+  background-color: #07060A;
+  border: 1px solid white;
+  width: 72%;
+  padding: 10px 30px;
+  color: white;
+  margin: 20px 0;
+}
+
+.input:focus {
+  outline: none;
+  box-shadow: 0px 0px 10px 1px #5fbf80;
+}
+
+.infoBlock {
+  margin: 20px 0;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 80%;
+  border: 1px solid gray;
+}
+.endButton {
+  background-color: #5fbf80;
+  box-shadow: #5fbf80;
+  border: none;
+  border-radius: 50px;
+  cursor: Pointer;
+  padding: 3px 20px;
+}
+.endButton:hover {
+  background-color: #45a266;
+}
+.infoItem {
+  margin: 0 10px;
+}
+.heading2 {
+  margin-bottom: 30px;
+}
+.heading3 {
+  margin: 30px 0;
+  width: 60%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.selected {
+  background-color: white;
+  color: black;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
