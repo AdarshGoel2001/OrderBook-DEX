@@ -20,6 +20,8 @@ contract Grid {
     address timeOracle;
     mapping(address => bytes32[]) addressToOrder;
     address usdc = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
+    uint takerFee = 9;
+    uint makerFee = 6;
 
     constructor(address _timeOracle) {
         admin = msg.sender;
@@ -911,6 +913,14 @@ contract Grid {
     //     return node.price;
     // }
 
+    function getTakerFee() internal view returns (uint) {
+        return takerFee;
+    }
+
+    function getMakerFee() internal view returns (uint) {
+        return makerFee;
+    }
+
     function takerMatching(bytes32 id) internal {
         IGridStructs.Order memory order = getOrderByID(id);
         if (order.isBuy) {
@@ -923,7 +933,11 @@ contract Grid {
                 sellNodeLL.head.quantity -= order.quantity;
                 IERC20(usdc).transfer(
                     sellNodeLL.head.trader,
-                    2 * order.quantity * sellNodeLL.head.price
+                    2 *
+                        order.quantity *
+                        sellNodeLL.head.price -
+                        (makerFee * order.quantity) /
+                        1000
                 );
                 nextDayExe[order.trader] += order.quantity;
                 return;
@@ -932,7 +946,11 @@ contract Grid {
                     order.quantity -= sellNodeLL.head.quantity;
                     IERC20(usdc).transfer(
                         sellNodeLL.head.trader,
-                        2 * sellNodeLL.head.quantity * sellNodeLL.head.price
+                        2 *
+                            sellNodeLL.head.quantity *
+                            sellNodeLL.head.price -
+                            (makerFee * sellNodeLL.head.quantity) /
+                            1000
                     );
                     nextDayExe[order.trader] += sellNodeLL.head.quantity;
                     deleteOrder(sellNodeLL.head.id, false);
@@ -949,7 +967,11 @@ contract Grid {
                 buyNodeLL.head.quantity -= order.quantity;
                 IERC20(usdc).transfer(
                     order.trader,
-                    2 * buyNodeLL.head.price * order.quantity
+                    2 *
+                        buyNodeLL.head.price *
+                        order.quantity -
+                        (takerFee * order.quantity) /
+                        1000
                 );
                 nextDayExe[buyNodeLL.head.trader] += order.quantity;
                 deleteOrder(order.id, false);
@@ -986,7 +1008,11 @@ contract Grid {
                     buyOrder.quantity -= sellOrder.quantity;
                     IERC20(usdc).transfer(
                         sellOrder.trader,
-                        2 * sellOrder.quantity * buyOrder.price
+                        2 *
+                            sellOrder.quantity *
+                            buyOrder.price -
+                            (makerFee * sellOrder.quantity) /
+                            1000
                     );
                     nextDayExe[buyOrder.trader] += sellOrder.quantity;
                     deleteOrder(sellOrder.id, false);
@@ -997,7 +1023,11 @@ contract Grid {
                     sellOrder.quantity -= buyOrder.quantity;
                     IERC20(usdc).transfer(
                         sellOrder.trader,
-                        2 * buyOrder.quantity * buyOrder.price
+                        2 *
+                            buyOrder.quantity *
+                            buyOrder.price -
+                            (makerFee * buyOrder.quantity) /
+                            1000
                     );
                     nextDayExe[buyOrder.trader] += buyOrder.quantity;
                     deleteOrder(buyOrder.id, false);
