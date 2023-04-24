@@ -12,12 +12,6 @@ contract Router {
     IGrid gridContract;
     address usdc;
 
-    struct orderDetails {
-        uint256 price;
-        uint256 amount;
-        bool isBuy;
-    }
-
     constructor(address _grid, address _usdc) {
         grid = _grid;
         admin = msg.sender;
@@ -94,7 +88,7 @@ contract Router {
         IERC20(usdc).transferFrom(_user, grid, _amount);
     }
 
-    function whitelist() public onlyAdmin {
-        gridContract.whitelist(msg.sender);
+    function whitelist(address _user) public onlyAdmin {
+        gridContract.whitelist(_user);
     }
 }

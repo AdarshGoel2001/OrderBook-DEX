@@ -30,5 +30,6 @@ interface IGridStructs {
     struct Tree {
         uint root;
         mapping(uint => Node) nodes;
+        uint count;
     }
 }
