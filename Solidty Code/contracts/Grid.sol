@@ -1006,6 +1006,8 @@ contract Grid {
                         (takerFee * order.quantity) /
                         1000
                 );
+                uint256 amount = 1;
+
                 nextDayExe[buyNodeLL.head.trader] += order.quantity;
                 deleteOrder(order.id, false);
                 return;
