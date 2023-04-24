@@ -21,6 +21,7 @@ export default function Trade() {
   const [price, setprice] = useState(0);
   const [positions, setpositions] = useState([]);
   const [bal, setbal]=useState({});
+  const [currPrice, setCurrPrice]=useState(0);
 
   const { data: signer, isError, isLoading } = useSigner();
   const { address, isConnected } = useAccount();
@@ -30,6 +31,11 @@ export default function Trade() {
     getPositions();
     getBalances();
   }, [isConnected]);
+
+  const getPrice = async () =>{
+    const price=await gridContract.getAvCurrentPrice().then(()=>console.log("Price gotten"));
+    setCurrPrice(price);
+  }
 
   const getBalances = async (address) => {
     const exe=await routerContract.getExebalance(address).then(()=>console.log("Noice"));
@@ -125,8 +131,8 @@ export default function Trade() {
             </button>
           </div>
           <p style={{ margin: "20px 0" }}>
-            Current Price :{" "}
-            <span style={{ color: "#5fbf80", fontWeight: 600 }}>$30.00</span>{" "}
+            Current Price :${currPrice || 0}
+            {/* <span style={{ color: "#5fbf80", fontWeight: 600 }}>$30.00</span>{" "} */}
           </p>
           <input
             type="number"
@@ -144,10 +150,10 @@ export default function Trade() {
               min={"1"}
             />
           )}
-          {type && (
+          {!type && (
           <p style={{ margin: "20px 0" }}>
-            Output :{" "}
-            <span style={{ color: "#5fbf80", fontWeight: 600 }}>$30.00</span>
+            Output :{direction ? (<>$</>) : (<>EXE</>)} {currPrice*amount}
+            {/* <span style={{ color: "#5fbf80", fontWeight: 600 }}>$30.00</span> */}
           </p>
           )}
           <button className="metamask-connect heroButton" onClick={handleSwap}>
