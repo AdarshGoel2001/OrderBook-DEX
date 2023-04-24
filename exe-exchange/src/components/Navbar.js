@@ -2,6 +2,7 @@ import React from "react";
 import logo from "./Logo.svg";
 import icon from "../metamask-icon.png";
 import { Link } from "react-router-dom";
+import { Web3Button } from "@web3modal/react";
 
 export default function Navbar() {
   return (
@@ -28,10 +29,7 @@ export default function Navbar() {
         </ul>
       </div>
       <div className="right-section">
-        <button className="metamask-connect borderGreen">
-          <img className="metamask-logo" src={icon} alt="metamask logo" />
-          Connect
-        </button>
+        <Web3Button />{" "}
       </div>
     </nav>
   );

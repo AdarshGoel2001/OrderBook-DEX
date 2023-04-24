@@ -34,6 +34,7 @@ root.render(
         <App />
       </RouterProvider>{" "}
     </WagmiConfig>
+    <Web3Modal projectId={projectId} ethereumClient={ethereumClient} />
   </React.StrictMode>
 );
 
