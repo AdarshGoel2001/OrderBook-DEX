@@ -107,6 +107,7 @@ contract Grid {
                 IGridStructs.LL(
                     IGridStructs.Order(0, address(0), 0, false, 0, false, 0),
                     IGridStructs.Order(0, address(0), 0, false, 0, false, 0),
+                    0,
                     0
                 );
         IGridStructs.Node storage gn = self.nodes[value];
@@ -257,6 +258,24 @@ contract Grid {
                 _getNodeCount(isBuy, self.nodes[value].right);
             value = self.nodes[value].parent;
         }
+    }
+
+    function inOrderSellHelper(
+        uint root,
+        uint[100] memory priceArray,
+        uint count
+    ) public view {
+        if (root == 0) return;
+        inOrderSellHelper(sellTree.nodes[root].left, priceArray, count);
+        priceArray[count++] = (sellTree.nodes[root].ll.head.price);
+        inOrderSellHelper(sellTree.nodes[root].right, priceArray, count);
+    }
+
+    function inOrderSell() public view returns (uint[100] memory) {
+        uint[100] memory priceArray;
+        uint count = 0;
+        inOrderSellHelper(sellTree.root, priceArray, count);
+        return priceArray;
     }
 
     function _treeMinimum(bool isBuy) public view returns (uint price) {
@@ -503,7 +522,8 @@ contract Grid {
             IGridStructs.LL memory _ll = IGridStructs.LL({
                 head: order,
                 tail: order,
-                size: 1
+                size: 1,
+                quantity: order.quantity
             });
             tree.nodes[tree.root].ll = _ll;
         } else {
@@ -517,11 +537,13 @@ contract Grid {
                 ll.head = order;
                 ll.tail = order;
                 ll.size = 1;
+                ll.quantity = order.quantity;
                 // tree.nodes[tree.root].ll = ll;
             } else {
                 ll.tail.next = id;
                 ll.tail = order;
                 ll.size++;
+                ll.quantity += order.quantity;
             }
 
             // Add the order to the linked list at the node
@@ -607,6 +629,7 @@ contract Grid {
         addressToOrder[orders[id].trader].pop;
         // require(ll != 0, "Order not found");
 
+        ll.quantity -= orders[id].quantity;
         if (ll.size == 1) {
             _remove(orders[id].isBuy, 0x0, orders[id].price);
             delete orders[id]; // remove from map

@@ -372,6 +372,10 @@ async function main() {
   const sr = await grid
     .updateAllEXEbalances()
     .then((res) => console.log("wohoo"));
+    const ssss = await grid
+    .inOrderSell()
+    .then((res) => console.log(res));
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

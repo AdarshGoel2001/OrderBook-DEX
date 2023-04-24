@@ -16,6 +16,7 @@ interface IGridStructs {
         Order head;
         Order tail;
         uint256 size;
+        uint quantity;
     }
     struct Node {
         uint parent;
