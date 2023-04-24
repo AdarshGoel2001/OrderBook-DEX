@@ -12,12 +12,13 @@ export default function Reg() {
   const [name, setName] = useState("");
 
   const [aadhar, setAadhar] = useState(0);
+  const [CID, setCID] = useState("");
 
   const [voterId, setVoterId] = useState("");
 
   const [add, setAddress] = useState("");
   const [dob, setDob] = useState(0);
-  const [submit, setsubmit] =useState(false);
+  const [submit, setsubmit] = useState(false);
 
   const { data: signer, isError, isLoading } = useSigner();
   const { address, isConnected } = useAccount();
@@ -38,17 +39,21 @@ export default function Reg() {
   const dateHandler = (e) => {
     setDob(e.target.value);
   };
-  var CID = "";
+
   const gateway = `https://gateway.lighthouse.storage/ipfs/${CID}`;
 
   const submitHandler = () => {
-    const uploadObject = { name, aadhar, voterId, add, dob };
+    const upload = { name, aadhar, voterId, add, dob };
+    const uploadObject = JSON.stringify(upload);
+    console.log(process.env.REACT_APP_LIGHTHOUSE_API);
+    console.log(uploadObject);
     setsubmit(true);
     uploadFileEncrypted(uploadObject);
   };
   const encryptionSignature = async () => {
     const messageRequested = (await lighthouse.getAuthMessage(address)).data
       .message;
+    console.log(messageRequested);
     const signedMessage = await signer.signMessage(messageRequested);
     return {
       signedMessage: signedMessage,
@@ -75,7 +80,7 @@ export default function Reg() {
     const sig = await encryptionSignature();
     const response = await lighthouse.uploadEncrypted(
       e,
-      process.env.REACT_APP_LIGHTHOUSE_API,
+      "b5f54b5b.a9704f1109444ea3a1831057a0585df4",
       sig.publicKey,
       sig.signedMessage,
       progressCallback
@@ -90,7 +95,7 @@ export default function Reg() {
         }
       Note: Hash in response is CID.
     */
-    CID = response.data.Hash;
+    setCID(response.data.Hash);
   };
 
   const signAuthMessage = async () => {
@@ -101,22 +106,21 @@ export default function Reg() {
     return { publicKey: publicKey, signedMessage: signedMessage };
   };
 
-
   const copy2 = () => {
     var copyText = document.querySelector("#text2");
     // copyText.select();
-    console.log("Copied")
+    console.log("Copied");
     const txt = copyText.textContent;
     navigator.clipboard.writeText(txt);
-  }
+  };
 
-    const copy1 = () => {
-      var copyText = document.querySelector("#text1");
-      // copyText.select();
-      console.log("Copied");
-      const txt = copyText.textContent;
-      navigator.clipboard.writeText(txt);
-    };
+  const copy1 = () => {
+    var copyText = document.querySelector("#text1");
+    // copyText.select();
+    console.log("Copied");
+    const txt = copyText.textContent;
+    navigator.clipboard.writeText(txt);
+  };
 
   const shareFile = async () => {
     const { publicKey, signedMessage } = await signAuthMessage();
