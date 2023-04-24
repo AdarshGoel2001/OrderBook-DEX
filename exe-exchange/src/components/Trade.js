@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { ethers } from "ethers";
 import "../App.css";
 import Navbar from "./Navbar";
+import { useAccount, useContract, useSigner } from "wagmi";
 
 const positionData = [
   {
@@ -38,6 +40,29 @@ const balanceInfo = {
 export default function Trade() {
   const [direction, setdirection] = useState(false);
   const [type, settype] = useState(true);
+  const [amount, setamount] = useState(0);
+  const [price, setprice] = useState(0);
+  const { data: signer, isError, isLoading } = useSigner();
+  const { address } = useAccount();
+
+  const getPositions = async () => {
+    const orderIDArray = await gridContract
+      .getOrdersForAddress(address)
+      .then(() => console.log("boom bam"));
+    const orders = orderIDArray.map((id) => gridContract.getOrderByID(id));
+    positionData = orders;
+  };
+
+  const gridContract = useContract({
+    address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+    abi: ensRegistryABI,
+    signerOrProvider: signer,
+  });
+  const routerContract = useContract({
+    address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+    abi: ensRegistryABI,
+    signerOrProvider: signer,
+  });
 
   const handledirection = () => {
     setdirection((value) => !value);
@@ -45,6 +70,17 @@ export default function Trade() {
   const handletype = () => {
     settype((value) => !value);
   };
+
+  const handleAmount = (e) => {
+    setamount(e);
+    console.log(amount);
+  };
+  const handlePrice = (e) => {
+    setprice(e);
+    console.log(price);
+  };
+
+  const handleSwap = () => {};
 
   return (
     <>
