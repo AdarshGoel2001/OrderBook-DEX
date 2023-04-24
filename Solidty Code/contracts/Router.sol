@@ -98,6 +98,17 @@ contract Router {
         return gridContract.getExe(consumer);
     }
 
+<<<<<<< Updated upstream
+=======
+    function  getNextExeBal(address consumer) public view returns (uint256) {
+        return gridContract.getNextExe(consumer);
+    }
+
+    function _transferInUSDC(address _user, uint256 _amount) internal {
+        IERC20(usdc).transferFrom(_user, grid, _amount);
+    }
+
+>>>>>>> Stashed changes
     function whitelist(address _user) public onlyAdmin {
         gridContract.whitelist(_user);
     }

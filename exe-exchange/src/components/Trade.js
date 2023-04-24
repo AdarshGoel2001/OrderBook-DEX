@@ -1,35 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import "../App.css";
 import Navbar from "./Navbar";
 import { useAccount, useContract, useSigner } from "wagmi";
+import { fetchBalance } from "@wagmi/core";
 
-const positionData = [
-  {
-    direction: "Buy",
-    size: "6.77",
-    price: "10",
-    key: 1,
-  },
-  {
-    direction: "Sell",
-    size: "5.32",
-    price: "100",
-    key: 2,
-  },
-  {
-    direction: "Buy",
-    size: "10.54",
-    price: "8",
-    key: 3,
-  },
-  {
-    direction: "Sell",
-    size: "3.12",
-    price: "6",
-    key: 4,
-  },
-];
 
 const balanceInfo = {
   exe: "100",
@@ -38,29 +13,49 @@ const balanceInfo = {
 };
 
 export default function Trade() {
+  var count=1;
+  // const map=["Sell", "Buy"]
   const [direction, setdirection] = useState(false);
   const [type, settype] = useState(true);
   const [amount, setamount] = useState(0);
   const [price, setprice] = useState(0);
+  const [positions, setpositions] = useState([]);
+  const [bal, setbal]=useState({});
+
   const { data: signer, isError, isLoading } = useSigner();
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
+  
+
+  useEffect(() => {
+    getPositions();
+    getBalances();
+  }, [isConnected]);
+
+  const getBalances = async (address) => {
+    const exe=await routerContract.getExebalance(address).then(()=>console.log("Noice"));
+    const nextexe=await routerContract.getNextExeBal(address).then(()=>console.log("gg"));
+    const balance = await fetchBalance({
+      address: address,
+    });
+    console.log("We are getting bals");
+    setbal({exe:exe, nextexe:nextexe, balance:balance});
+  }
 
   const getPositions = async () => {
     const orderIDArray = await gridContract
       .getOrdersForAddress(address)
       .then(() => console.log("boom bam"));
     const orders = orderIDArray.map((id) => gridContract.getOrderByID(id));
-    positionData = orders;
+    console.log("We are getting poss")
+    setpositions(orders);
   };
 
   const gridContract = useContract({
     address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    abi: ensRegistryABI,
     signerOrProvider: signer,
   });
   const routerContract = useContract({
     address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    abi: ensRegistryABI,
     signerOrProvider: signer,
   });
 
@@ -80,7 +75,15 @@ export default function Trade() {
     console.log(price);
   };
 
-  const handleSwap = () => {};
+  const deleteOrder = () =>{
+
+  }
+
+  const handleSwap = async () => {
+    const swap=await gridContract.placeOrder(amount, type, price, direction).then(()=>getPositions());
+    getPositions();
+    count++;
+  };
 
   return (
     <>
@@ -144,16 +147,16 @@ export default function Trade() {
             Output :{" "}
             <span style={{ color: "#5fbf80", fontWeight: 600 }}>$30.00</span>
           </p>
-          <button className="metamask-connect heroButton">Swap</button>
+          <button className="metamask-connect heroButton" onClick={handleSwap}>Swap</button>
         </div>
         <div className="tradeBlock tradeBlock2">
           <h2 className="heading2">Your Positions</h2>
-          {positionData.map((item) => (
+          {positions.map((item) => (
             <div key={item.key} className="infoBlock">
               <span className="infoItem">{item.direction}</span>
               <span className="infoItem">Size: {item.size}</span>
               <span className="infoItem">Price: {item.price}</span>
-              <button className="endButton">end</button>
+              <button className="endButton" onClick={()=>deleteOrder(item)}>end</button>
             </div>
           ))}
         </div>
@@ -161,13 +164,13 @@ export default function Trade() {
           <div className="selectorBlock3">
             <h2 className="heading2">Your Balances</h2>
             <h3 className="heading3">
-              EXE <span className="spacing">{balanceInfo.exe}</span>
+              EXE <span className="spacing">{bal.exe || 0}</span>
             </h3>
             <h3 className="heading3">
-              EXE Gain <span>{balanceInfo.nextexe}</span>
+              Tommorow's EXE <span>{bal.nextexe || 0}</span>
             </h3>
             <h3 className="heading3">
-              EXE <span>{balanceInfo.usdc}</span>
+              Token <span>{bal.balance || 0}</span>
             </h3>
           </div>
         </div>

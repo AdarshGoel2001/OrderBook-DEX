@@ -4,7 +4,8 @@ import icon from "../metamask-icon.png";
 import { Link } from "react-router-dom";
 import { Web3Button } from "@web3modal/react";
 
-export default function Navbar() {
+export default function Navbar({ setreg }, {reg}) {
+  console.log(reg)
   return (
     <nav className="navbar">
       <div className="left-section">
@@ -20,9 +21,13 @@ export default function Navbar() {
               <span className="shadow">Trade</span>
             </li>
           </Link>
-          <li className="nav-link">
-            <span className="shadow">About</span>
-          </li>
+          {(reg?(<></>):(
+          <Link to="/register">
+            <li className="nav-link">
+              <span className="shadow">Register</span>
+            </li>
+          </Link>
+          ))}
           <li className="nav-link">
             <span className="shadow">Contact</span>
           </li>
