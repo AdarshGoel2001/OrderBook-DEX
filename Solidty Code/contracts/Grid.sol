@@ -946,27 +946,33 @@ contract Grid {
             );
             if (sellNodeLL.head.quantity > order.quantity) {
                 sellNodeLL.head.quantity -= order.quantity;
-                IERC20(usdc).transfer(
-                    sellNodeLL.head.trader,
-                    2 *
-                        order.quantity *
-                        sellNodeLL.head.price -
-                        (makerFee * order.quantity) /
-                        1000
+
+                uint256 amount = (order.quantity *
+                    sellNodeLL.head.price *
+                    (1000 - takerFee)) / 1000;
+
+                (bool success, ) = sellNodeLL.head.trader.call{value: amount}(
+                    ""
                 );
+                require(success, "Transfer failed.");
+                amount =
+                    order.price -
+                    (order.quantity * sellNodeLL.head.price) -
+                    ((order.quantity * sellNodeLL.head.price * takerFee) /
+                        1000);
                 nextDayExe[order.trader] += order.quantity;
                 return;
             } else {
                 while (order.quantity > 0 && (sellTree.count != 0)) {
                     order.quantity -= sellNodeLL.head.quantity;
-                    IERC20(usdc).transfer(
-                        sellNodeLL.head.trader,
-                        2 *
-                            sellNodeLL.head.quantity *
-                            sellNodeLL.head.price -
-                            (makerFee * sellNodeLL.head.quantity) /
-                            1000
-                    );
+                    uint256 amount = (sellNodeLL.head.quantity *
+                        sellNodeLL.head.price *
+                        (1000 - takerFee)) / 1000;
+
+                    (bool success, ) = sellNodeLL.head.trader.call{
+                        value: amount
+                    }("");
+                    require(success, "Transfer failed.");
                     nextDayExe[order.trader] += sellNodeLL.head.quantity;
                     deleteOrder(sellNodeLL.head.id, false);
                     sellNodeLL = _getNode(false, _treeMinimum(false));
@@ -1021,36 +1027,29 @@ contract Grid {
                     // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
                     // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
                     buyOrder.quantity -= sellOrder.quantity;
-                    uint256 amount = sellOrder.price +
-                        (sellOrder.quantity * buyOrder.price);
-                    2 *
-                        sellOrder.quantity *
-                        buyOrder.price -
-                        (makerFee * sellOrder.quantity) /
-                        1000;
-                    (bool success, ) = sellOrder.trader.call{
-                        value: 2 *
-                            sellOrder.quantity *
-                            buyOrder.price -
-                            (makerFee * sellOrder.quantity) /
-                            1000
-                    }("");
+                    uint256 amount = (sellOrder.quantity *
+                        buyOrder.price *
+                        (1000 - makerFee)) / 1000;
+
+                    (bool success, ) = sellOrder.trader.call{value: amount}("");
+                    require(success, "Transfer failed.");
                     nextDayExe[buyOrder.trader] += sellOrder.quantity;
+
                     deleteOrder(sellOrder.id, false);
                     sellOrder = sellNodeLL.head;
                 } else {
                     // Otherwise, the sell order is partially matched.
                     // emit Trade(sellOrder.user, buyOrder.user, buyOrder.quantity, sellNode.key);
                     sellOrder.quantity -= buyOrder.quantity;
-                    IERC20(usdc).transfer(
-                        sellOrder.trader,
-                        2 *
-                            buyOrder.quantity *
-                            buyOrder.price -
-                            (makerFee * buyOrder.quantity) /
-                            1000
-                    );
+
+                    uint256 amount = (buyOrder.quantity *
+                        buyOrder.price *
+                        (1000 - makerFee)) / 1000;
+
+                    (bool success, ) = sellOrder.trader.call{value: amount}("");
+                    require(success, "Transfer failed.");
                     nextDayExe[buyOrder.trader] += buyOrder.quantity;
+
                     deleteOrder(buyOrder.id, false);
                     buyOrder = buyNodeLL.head;
                 }
