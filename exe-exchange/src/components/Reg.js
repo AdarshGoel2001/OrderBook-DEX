@@ -4,7 +4,8 @@ import "../App.css";
 import Navbar from "./Navbar";
 import "../Reg.css";
 
-export default function Reg({reg}, {setreg}) {
+
+export default function Reg() {
 
 
   return (
@@ -15,36 +16,36 @@ export default function Reg({reg}, {setreg}) {
           <div class="title">Welcome</div>
           <div class="subtitle">Let's create your account!</div>
           <div class="input-container ic1">
-            <input
-              id="firstname"
-              class="input"
-              type="text"
-              placeholder="First name"
-            />
-            {/* <div class="cut"></div> */}
-            {/* <label for="firstname" class="placeholder">
-                First name
-              </label> */}
+            <input id="name" class="input" type="text" placeholder="Name" />
           </div>
           <div class="input-container ic2">
             <input
-              id="lastname"
+              id="aadharId"
               class="input"
               type="text"
-              placeholder="Last name"
+              placeholder="aadharId"
             />
-            {/* <div class="cut"></div> */}
-            {/* <label for="lastname" class="placeholder">
-                Last name
-              </label> */}
           </div>
           <div class="input-container ic2">
-            <input id="email" class="input" type="text" placeholder="email" />
-            {/* <div class="cut cut-short"></div> */}
-            {/* <label for="email" class="placeholder">
-                Email
-              </label> */}
+            <input
+              id="voterId"
+              class="input"
+              type="text"
+              placeholder="voterId"
+            />
           </div>
+          <div class="input-container ic2">
+            <input
+              id="address"
+              class="input"
+              type="text"
+              placeholder="address"
+            />
+          </div>
+          <div class="input-container ic2">
+            <input type="date" id="birthday" name="birthday"></input>
+          </div>
+
           <button type="text" class="submit">
             submit
           </button>
