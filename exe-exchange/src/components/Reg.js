@@ -199,22 +199,22 @@ export default function Reg() {
           <button type="text" class="submit" onClick={submitHandler}>
             submit
           </button>
-          {submit && (
-            <>
-              <div class="subtitle" id="text1">
-                {CID}
-              </div>
-              <button onClick={copy1} class="copybtn">
-                Copy CID
-              </button>
-              <div class="subtitle" id="text2">
-                {gateway}
-              </div>
-              <button onClick={copy2} class="copybtn">
-                Copy gateway
-              </button>
-            </>
-          )}
+          
+            
+            <div class="subtitle" id="text1">
+              {CID}
+            </div>
+            <button onClick={copy1} class="copybtn">
+              Copy CID
+            </button>
+            <div class="subtitle" id="text2">
+              {gateway}
+            </div>
+            <button onClick={copy2} class="copybtn">
+              Copy gateway
+            </button>
+            
+          
         </div>
       </div>
     </>
