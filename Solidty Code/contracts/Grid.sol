@@ -291,6 +291,37 @@ contract Grid {
         return priceArray;
     }
 
+    function inOrderBuyHelper(
+        uint root,
+        uint[2][10] memory priceArray
+    ) public view {
+        uint[100] memory stac;
+        uint sc = 0;
+        stac[sc++] = (root);
+        uint curr = root;
+        uint count = 0;
+        while (curr != 0 && count < 10 && count < buyTree.count) {
+            while (curr != 0) {
+                stac[sc++] = (curr);
+                curr = sellTree.nodes[root].right;
+            }
+            curr = stac[0];
+            sc--;
+            priceArray[count] = [
+                sellTree.nodes[curr].ll.head.price,
+                sellTree.nodes[curr].ll.quantity
+            ];
+            curr = sellTree.nodes[root].left;
+            count++;
+        }
+    }
+
+    function inOrderBuy() public view returns (uint[2][10] memory) {
+        uint[2][10] memory priceArray;
+        inOrderSellHelper(buyTree.root, priceArray);
+        return priceArray;
+    }
+
     function _treeMinimum(bool isBuy) public view returns (uint price) {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
         uint value = self.root;
