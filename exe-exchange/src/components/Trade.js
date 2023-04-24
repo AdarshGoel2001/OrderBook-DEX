@@ -14,7 +14,7 @@ const balanceInfo = {
 
 export default function Trade() {
   var count=1;
-  // const map=["Sell", "Buy"]
+  const map=["Sell", "Buy"]
   const [direction, setdirection] = useState(false);
   const [type, settype] = useState(true);
   const [amount, setamount] = useState(0);
@@ -63,7 +63,7 @@ export default function Trade() {
     setdirection((value) => !value);
   };
   const handletype = () => {
-    settype((value) => !value);
+    settype(!type);
   };
 
   const handleAmount = (e) => {
@@ -75,8 +75,9 @@ export default function Trade() {
     console.log(price);
   };
 
-  const deleteOrder = () =>{
-
+  const deleteOrder = async (id) =>{
+    const del= await routerContract.deleteOrder(id).then(()=>console.log("Order deleted"));
+    setpositions((pos) => pos.filter((pos)=>pos.id!==id));
   }
 
   const handleSwap = async () => {
@@ -143,20 +144,29 @@ export default function Trade() {
               min={"1"}
             />
           )}
+          {type && (
           <p style={{ margin: "20px 0" }}>
             Output :{" "}
             <span style={{ color: "#5fbf80", fontWeight: 600 }}>$30.00</span>
           </p>
-          <button className="metamask-connect heroButton" onClick={handleSwap}>Swap</button>
+          )}
+          <button className="metamask-connect heroButton" onClick={handleSwap}>
+            Swap
+          </button>
         </div>
         <div className="tradeBlock tradeBlock2">
           <h2 className="heading2">Your Positions</h2>
           {positions.map((item) => (
-            <div key={item.key} className="infoBlock">
-              <span className="infoItem">{item.direction}</span>
-              <span className="infoItem">Size: {item.size}</span>
+            <div key={item.id} className="infoBlock">
+              <span className="infoItem">{item.map[direction]}</span>
+              <span className="infoItem">Size: {item.quantity}</span>
               <span className="infoItem">Price: {item.price}</span>
-              <button className="endButton" onClick={()=>deleteOrder(item)}>end</button>
+              <button
+                className="endButton"
+                onClick={() => deleteOrder(item.key)}
+              >
+                end
+              </button>
             </div>
           ))}
         </div>
