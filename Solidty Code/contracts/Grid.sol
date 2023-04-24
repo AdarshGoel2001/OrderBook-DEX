@@ -944,12 +944,12 @@ contract Grid {
                 false,
                 _treeMinimum(false)
             );
-            if (sellNodeLL.head.quantity > order.quantity) {
+            if (sellNodeLL.head.quantity >= order.quantity) {
                 sellNodeLL.head.quantity -= order.quantity;
 
                 uint256 amount = (order.quantity *
                     sellNodeLL.head.price *
-                    (1000 - takerFee)) / 1000;
+                    (1000 - makerFee)) / 1000;
 
                 (bool success, ) = sellNodeLL.head.trader.call{value: amount}(
                     ""
@@ -960,23 +960,33 @@ contract Grid {
                     (order.quantity * sellNodeLL.head.price) -
                     ((order.quantity * sellNodeLL.head.price * takerFee) /
                         1000);
+                (success, ) = order.trader.call{value: amount}("");
+                require(success, "Transfer failed.");
                 nextDayExe[order.trader] += order.quantity;
                 return;
             } else {
+                uint256 amount2;
                 while (order.quantity > 0 && (sellTree.count != 0)) {
                     order.quantity -= sellNodeLL.head.quantity;
                     uint256 amount = (sellNodeLL.head.quantity *
                         sellNodeLL.head.price *
-                        (1000 - takerFee)) / 1000;
+                        (1000 - makerFee)) / 1000;
 
-                    (bool success, ) = sellNodeLL.head.trader.call{
+                    (bool success1, ) = sellNodeLL.head.trader.call{
                         value: amount
                     }("");
-                    require(success, "Transfer failed.");
+                    require(success1, "Transfer failed.");
+                    amount2 +=
+                        (sellNodeLL.head.quantity *
+                            sellNodeLL.head.price *
+                            (1000 - takerFee)) /
+                        1000;
                     nextDayExe[order.trader] += sellNodeLL.head.quantity;
                     deleteOrder(sellNodeLL.head.id, false);
                     sellNodeLL = _getNode(false, _treeMinimum(false));
                 }
+                (bool success, ) = order.trader.call{value: amount2}("");
+                require(success, "Transfer failed.");
             }
         } else {
             if (buyTree.count == 0) return;
