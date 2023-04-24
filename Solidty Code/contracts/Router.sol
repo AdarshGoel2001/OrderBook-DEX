@@ -23,6 +23,13 @@ contract Router {
         require(msg.sender == admin, "Only admin can call this function.");
         _;
     }
+    modifier onlyWhitelisted() {
+        require(
+            gridContract.whitelisted[msg.sender],
+            "Only whitelisted users can call this function."
+        );
+        _;
+    }
 
     function setAdmin(address _admin) public onlyAdmin {
         admin = _admin;
@@ -42,13 +49,20 @@ contract Router {
         bool _isTaker,
         uint256 _price,
         bool _isBuy
-    ) public returns (bytes32) {
-        if (_isTaker) {
-            uint256 currentPrice = gridContract.getCurrentPrice(_isBuy);
-            _transferInUSDC(msg.sender, currentPrice * _shares);
-        } else {
-            uint256 amount = _shares * _price;
-            _transferInUSDC(msg.sender, amount);
+    ) public payable returns (bytes32) {
+        if (_isBuy) {
+            if (_isTaker) {
+                uint256 currentPrice = gridContract.getCurrentPrice(_isBuy);
+                require(msg.value == _price, "Enter price as msg.value");
+                require(_price >= (currentPrice * 14 * _shares) / 10);
+                (bool success, ) = payable(grid).call{value: msg.value}("");
+                require(success, "Transfer failed.");
+            } else {
+                uint256 amount = _shares * _price;
+                require(msg.value >= amount, "Incorrect amount of ETH sent.");
+                (bool success, ) = payable(grid).call{value: msg.value}("");
+                require(success, "Transfer failed.");
+            }
         }
 
         IGridStructs.Order memory order = IGridStructs.Order({
@@ -82,10 +96,6 @@ contract Router {
 
     function getEXEbalance(address consumer) public view returns (uint256) {
         return gridContract.getExe(consumer);
-    }
-
-    function _transferInUSDC(address _user, uint256 _amount) internal {
-        IERC20(usdc).transferFrom(_user, grid, _amount);
     }
 
     function whitelist(address _user) public onlyAdmin {

@@ -33,6 +33,16 @@ contract Grid {
         timeOracle = _timeOracle;
     }
 
+    function setMakerFee(uint _makerFee) public {
+        require(msg.sender == admin, "You are not authorized");
+        makerFee = _makerFee;
+    }
+
+    function setTakerFee(uint _takerFee) public {
+        require(msg.sender == admin, "You are not authorized");
+        takerFee = _takerFee;
+    }
+
     function getRootTree(bool isBuy) public view returns (uint256) {
         return isBuy ? buyTree.root : sellTree.root;
     }
@@ -1011,14 +1021,20 @@ contract Grid {
                     // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
                     // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
                     buyOrder.quantity -= sellOrder.quantity;
-                    IERC20(usdc).transfer(
-                        sellOrder.trader,
-                        2 *
+                    uint256 amount = sellOrder.price +
+                        (sellOrder.quantity * buyOrder.price);
+                    2 *
+                        sellOrder.quantity *
+                        buyOrder.price -
+                        (makerFee * sellOrder.quantity) /
+                        1000;
+                    (bool success, ) = sellOrder.trader.call{
+                        value: 2 *
                             sellOrder.quantity *
                             buyOrder.price -
                             (makerFee * sellOrder.quantity) /
                             1000
-                    );
+                    }("");
                     nextDayExe[buyOrder.trader] += sellOrder.quantity;
                     deleteOrder(sellOrder.id, false);
                     sellOrder = sellNodeLL.head;
