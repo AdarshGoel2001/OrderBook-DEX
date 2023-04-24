@@ -55,7 +55,7 @@ export default function Trade() {
     console.log("We are getting poss")
     setpositions(orders);
   };
-  
+
   const gridContract = useContract({
     address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
     signerOrProvider: signer,
@@ -87,7 +87,7 @@ export default function Trade() {
   }
 
   const handleSwap = async () => {
-    const swap=await gridContract.placeOrder(amount, type, price, direction).then(()=>getPositions());
+    const swap=await routerContract.placeOrder(amount, type, price, direction).then(()=>getPositions());
     getPositions();
     count++;
   };
