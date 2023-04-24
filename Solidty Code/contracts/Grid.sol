@@ -23,6 +23,11 @@ contract Grid {
     uint takerFee = 9;
     uint makerFee = 6;
 
+    function checkIfWhitelisted(address trader) public view returns (bool) {
+        if (whitelisted[trader]) return true;
+        return false;
+    }
+
     constructor(address _timeOracle) {
         admin = msg.sender;
         timeOracle = _timeOracle;
