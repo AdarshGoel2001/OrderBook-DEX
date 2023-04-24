@@ -93,9 +93,7 @@ export default function Reg() {
   };
 
   const signAuthMessage = async () => {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    const publicKey = (await signer.getAddress()).toLowerCase();
+    const publicKey = address.toLowerCase();
     const messageRequested = (await lighthouse.getAuthMessage(publicKey)).data
       .message;
     const signedMessage = await signer.signMessage(messageRequested);
@@ -103,10 +101,6 @@ export default function Reg() {
   };
 
   const shareFile = async () => {
-    // const cid = "QmVkbVeTGA7RHgvdt31H3ax1gW3pLi9JfW6i9hDdxTmcGK";
-
-    // Then get auth message and sign
-    // Note: the owner of the file should sign the message.
     const { publicKey, signedMessage } = await signAuthMessage();
 
     const publicKeyUserB = ["0xCD6701515a90C32f4d40D8C6b370A1FA51712794"];

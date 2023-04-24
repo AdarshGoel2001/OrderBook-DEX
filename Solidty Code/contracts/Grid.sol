@@ -987,13 +987,14 @@ contract Grid {
                             sellNodeLL.head.price *
                             (1000 - takerFee)) /
                         1000;
-                    (success1, ) = order.trader.call{value: amount2}("");
-                    require(success1, "Transfer failed.");
+
                     nextDayExe[order.trader] += sellNodeLL.head.quantity;
                     if (amount3 == 0) deleteOrder(sellNodeLL.head.id, false);
                     sellNodeLL = _getNode(false, _treeMinimum(false));
                 }
-                (bool success, ) = order.trader.call{value: amount2}("");
+                (bool success, ) = order.trader.call{
+                    value: order.price - amount2
+                }("");
                 require(success, "Transfer failed.");
             }
         } else {
