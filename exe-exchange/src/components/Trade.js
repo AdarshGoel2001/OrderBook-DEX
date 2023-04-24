@@ -55,7 +55,7 @@ export default function Trade() {
     console.log("We are getting poss")
     setpositions(orders);
   };
-
+  
   const gridContract = useContract({
     address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
     signerOrProvider: signer,
@@ -105,7 +105,7 @@ export default function Trade() {
                 "selector selectorLeft" + (direction ? " selected" : "")
               }
             >
-              Buy EXE from USDC
+              Buy EXE from ETH
             </button>
             <button
               onClick={handledirection}
@@ -113,7 +113,7 @@ export default function Trade() {
                 "selector selectorRight" + (!direction ? " selected" : "")
               }
             >
-              Sell EXE for USDC
+              Sell EXE for ETH
             </button>
           </div>
           <div className="selectorBlock">

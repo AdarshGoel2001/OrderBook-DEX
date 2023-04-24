@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 import React, { useState } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import "../App.css";
@@ -72,7 +74,7 @@ export default function Reg() {
     const sig = await encryptionSignature();
     const response = await lighthouse.uploadEncrypted(
       e,
-      "YOUR_API_KEY",
+      process.env.LIGHTHOUSE_API,
       sig.publicKey,
       sig.signedMessage,
       progressCallback
