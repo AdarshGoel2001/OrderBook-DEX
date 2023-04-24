@@ -17,7 +17,7 @@
   background-color: #15172b;
   border-radius: 20px;
   box-sizing: border-box;
-  height: 640px;
+  height: 760px;
   padding: 20px;
   width: 380px;
 }
@@ -130,3 +130,31 @@
 .submit:active {
   background-color: #06b;
 }
+
+.copybtn{
+  
+
+                display: inline-block;
+                outline: 0;
+                cursor: pointer;
+                border-radius: 8px;
+                box-shadow: 0 2px 5px 0 rgb(213 217 217 / 50%);
+                background: #08d;
+                border: 1px solid #FCD200;
+                font-size: 11px;
+                height: 22px;
+                padding: 0 6px;
+                text-align: center;
+                font-weight: 500;
+                color: #0F1111;
+                
+                     
+}
+
+.copybtn:hover{
+                    background: #F7CA00;
+                    border-color: #F2C200;
+                    box-shadow: 0 2px 5px 0 rgb(213 217 217 / 50%);
+                }
+                    
+                

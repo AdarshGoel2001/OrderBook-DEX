@@ -1,6 +1,4 @@
-require("dotenv").config();
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import "../App.css";
 import Navbar from "./Navbar";
@@ -19,6 +17,7 @@ export default function Reg() {
 
   const [add, setAddress] = useState("");
   const [dob, setDob] = useState(0);
+  const [submit, setsubmit] =useState(false);
 
   const { data: signer, isError, isLoading } = useSigner();
   const { address, isConnected } = useAccount();
@@ -39,11 +38,12 @@ export default function Reg() {
   const dateHandler = (e) => {
     setDob(e.target.value);
   };
-  const CID = "";
+  var CID = "";
   const gateway = `https://gateway.lighthouse.storage/ipfs/${CID}`;
 
   const submitHandler = () => {
     const uploadObject = { name, aadhar, voterId, add, dob };
+    setsubmit(true);
     uploadFileEncrypted(uploadObject);
   };
   const encryptionSignature = async () => {
@@ -101,6 +101,23 @@ export default function Reg() {
     return { publicKey: publicKey, signedMessage: signedMessage };
   };
 
+
+  const copy2 = () => {
+    var copyText = document.querySelector("#text2");
+    // copyText.select();
+    console.log("Copied")
+    const txt = copyText.textContent;
+    navigator.clipboard.writeText(txt);
+  }
+
+    const copy1 = () => {
+      var copyText = document.querySelector("#text1");
+      // copyText.select();
+      console.log("Copied");
+      const txt = copyText.textContent;
+      navigator.clipboard.writeText(txt);
+    };
+
   const shareFile = async () => {
     const { publicKey, signedMessage } = await signAuthMessage();
 
@@ -141,6 +158,7 @@ export default function Reg() {
               type="text"
               placeholder="Name"
               onChange={nameHandler}
+              required
             />
           </div>
           <div class="input-container ic2">
@@ -150,6 +168,7 @@ export default function Reg() {
               type="text"
               placeholder="aadharId"
               onChange={aadharHandler}
+              required
             />
           </div>
           <div class="input-container ic2">
@@ -159,6 +178,7 @@ export default function Reg() {
               type="text"
               placeholder="voterId"
               onChange={voterIDHandler}
+              required
             />
           </div>
           <div class="input-container ic2">
@@ -168,6 +188,7 @@ export default function Reg() {
               type="text"
               placeholder="address"
               onChange={addressHandler}
+              required
             />
           </div>
           <div class="input-container ic2">
@@ -176,12 +197,28 @@ export default function Reg() {
               id="birthday"
               name="birthday"
               onChange={dateHandler}
+              required
             ></input>
           </div>
-
           <button type="text" class="submit" onClick={submitHandler}>
             submit
           </button>
+          {submit && (
+            <>
+              <div class="subtitle" id="text1">
+                {CID}
+              </div>
+              <button onClick={copy1} class="copybtn">
+                Copy CID
+              </button>
+              <div class="subtitle" id="text2">
+                {gateway}
+              </div>
+              <button onClick={copy2} class="copybtn">
+                Copy gateway
+              </button>
+            </>
+          )}
         </div>
       </div>
     </>
