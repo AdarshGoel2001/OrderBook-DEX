@@ -15,7 +15,7 @@ import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { polygon, polygonMumbai } from "wagmi/chains";
 
 const chains = [polygon, polygonMumbai];
-const projectId = "40435ba07c29dd9596260e4cb18ff938";
+const projectId = process.env.REACT_APP_W3M_PROJECTID;
 
 const { provider } = configureChains(chains, [w3mProvider({ projectId })]);
 const wagmiClient = createClient({

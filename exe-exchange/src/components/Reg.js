@@ -75,7 +75,7 @@ export default function Reg() {
     const sig = await encryptionSignature();
     const response = await lighthouse.uploadEncrypted(
       e,
-      process.env.LIGHTHOUSE_API,
+      process.env.REACT_APP_LIGHTHOUSE_API,
       sig.publicKey,
       sig.signedMessage,
       progressCallback
@@ -137,10 +137,6 @@ export default function Reg() {
         shareTo: ["0x201Bcc3217E5AA8e803B41d1F5B6695fFEbD5CeD"],
         status: "Success"
       }
-    */
-    /*Visit: 
-        https://files.lighthouse.storage/viewFile/<cid>  
-      To view encrypted file
     */
   };
 
