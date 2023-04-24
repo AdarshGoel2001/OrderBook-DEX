@@ -38,6 +38,11 @@ contract IGrid {
         // router = _router;
     }
 
+    function checkIfWhitelisted(address trader) public view returns (bool) {
+        // if (whitelisted[trader]) return true;
+        // return false;
+    }
+
     function whitelist(address _user) public onlyRouter {
         // whitelisted[_user] = true;
     }
