@@ -23,9 +23,10 @@ contract Router {
         require(msg.sender == admin, "Only admin can call this function.");
         _;
     }
+
     modifier onlyWhitelisted() {
         require(
-            gridContract.whitelisted[msg.sender],
+            gridContract.checkIfWhitelisted(msg.sender),
             "Only whitelisted users can call this function."
         );
         _;
@@ -49,7 +50,7 @@ contract Router {
         bool _isTaker,
         uint256 _price,
         bool _isBuy
-    ) public payable returns (bytes32) {
+    ) public payable onlyWhitelisted returns (bytes32) {
         if (_isBuy) {
             if (_isTaker) {
                 uint256 currentPrice = gridContract.getCurrentPrice(_isBuy);
@@ -82,7 +83,7 @@ contract Router {
         return id;
     }
 
-    function deleteOrder(bytes32 _id) public {
+    function deleteOrder(bytes32 _id) public onlyWhitelisted {
         IGridStructs.Order memory order;
         order = gridContract.getOrderByID(_id);
         require(
@@ -98,7 +99,7 @@ contract Router {
         return gridContract.getExe(consumer);
     }
 
-    function  getNextExeBal(address consumer) public view returns (uint256) {
+    function getNextExeBal(address consumer) public view returns (uint256) {
         return gridContract.getNextExe(consumer);
     }
 

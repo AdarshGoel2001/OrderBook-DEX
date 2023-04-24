@@ -47,6 +47,10 @@ contract IGrid {
         // whitelisted[_user] = true;
     }
 
+    function getNextExe(address _user) public view returns (uint256) {
+        // return nextDayExe[_user];
+    }
+
     function _exists(
         bool isBuy,
         uint value
