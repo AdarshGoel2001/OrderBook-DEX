@@ -40,6 +40,7 @@ export default function Reg() {
     setDob(e.target.value);
   };
   const CID = "";
+  const gateway = `https://gateway.lighthouse.storage/ipfs/${CID}`;
 
   const submitHandler = () => {
     const uploadObject = { name, aadhar, voterId, add, dob };
