@@ -262,19 +262,32 @@ contract Grid {
 
     function inOrderSellHelper(
         uint root,
-        uint[100] memory priceArray,
-        uint count
+        uint[2][10] memory priceArray
     ) public view {
-        if (root == 0) return;
-        inOrderSellHelper(sellTree.nodes[root].left, priceArray, count);
-        priceArray[count++] = (sellTree.nodes[root].ll.head.price);
-        inOrderSellHelper(sellTree.nodes[root].right, priceArray, count);
+        uint[100] memory stac;
+        uint sc = 0;
+        stac[sc++] = (root);
+        uint curr = root;
+        uint count = 0;
+        while (curr != 0 && count < 10 && count < sellTree.count) {
+            while (curr != 0) {
+                stac[sc++] = (curr);
+                curr = sellTree.nodes[root].left;
+            }
+            curr = stac[0];
+            sc--;
+            priceArray[count] = [
+                sellTree.nodes[curr].ll.head.price,
+                sellTree.nodes[curr].ll.quantity
+            ];
+            curr = sellTree.nodes[root].right;
+            count++;
+        }
     }
 
-    function inOrderSell() public view returns (uint[100] memory) {
-        uint[100] memory priceArray;
-        uint count = 0;
-        inOrderSellHelper(sellTree.root, priceArray, count);
+    function inOrderSell() public view returns (uint[2][10] memory) {
+        uint[2][10] memory priceArray;
+        inOrderSellHelper(sellTree.root, priceArray);
         return priceArray;
     }
 
