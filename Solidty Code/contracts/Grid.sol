@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 pragma solidity ^0.8.0;
-
+import "hardhat/console.sol";
 // import "solidity-linked-list/contracts/StructuredLinkedList.sol";
 import "./interfaces/Structs.sol";
-import "./interfaces/IERC20.sol";
-import "./HitchensOrderStatisticsTreeLib.sol";
+
+// import "./interfaces/IERC20.sol";
+// import "./HitchensOrderStatisticsTreeLib.sol";
 
 contract Grid {
     IGridStructs.Tree buyTree;
@@ -168,6 +169,9 @@ contract Grid {
         //     !_keyExists(isBuy, key, value),
         //     "OrderStatisticsTree(406) - Value and Key pair exists. Cannot be inserted again."
         // );
+        // if(self.count==1){
+        //     self.root=value;
+        // }
         uint cursor;
         uint probe = self.root;
         while (probe != EMPTY) {
@@ -182,7 +186,6 @@ contract Grid {
                 //     uint(1);
                 return;
             }
-            self.nodes[cursor].count++;
         }
         IGridStructs.Node storage nValue = self.nodes[value];
         // nValue.ll = ;
@@ -190,6 +193,13 @@ contract Grid {
         nValue.left = EMPTY;
         nValue.right = EMPTY;
         nValue.red = true;
+        nValue.ll = IGridStructs.LL(
+            IGridStructs.Order(0, address(0), 0, false, value, false, 0),
+            IGridStructs.Order(0, address(0), 0, false, value, false, 0),
+            0,
+            0
+        );
+        nValue.count = 0;
         // nValue.keyMap[key] = nValue.keys.push(key) - uint(1);
         if (cursor == EMPTY) {
             self.root = value;
@@ -198,17 +208,18 @@ contract Grid {
         } else {
             self.nodes[cursor].right = value;
         }
-        IGridStructs.Tree storage sel = isBuy ? buyTree : sellTree;
-        sel.nodes[value] = nValue;
         _insertFixup(isBuy, value);
     }
 
     function _remove(bool isBuy, bytes32 key, uint value) internal {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
+        if (self.count == 0) return;
         self.count--;
+
+        console.log("inside remove price   -- %s", isBuy);
         require(
             value != EMPTY,
-            "OrderStatisticsTree(407) - Value to delete cannot be zero"
+            "OrderStatisticsTree(407) - Value to delete cannot be zero "
         );
         // require(
         //     _keyExists(isBuy, key, value),
@@ -346,16 +357,25 @@ contract Grid {
         while (self.nodes[value].left != EMPTY) {
             value = self.nodes[value].left;
         }
-        return value;
+        return self.nodes[value].ll.head.price;
     }
 
     function _treeMaximum(bool isBuy) public view returns (uint price) {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
         uint value = self.root;
+        console.log(
+            "treeMax consoling   -- %d",
+            self.nodes[value].ll.head.price
+        );
         while (self.nodes[value].right != EMPTY) {
             value = self.nodes[value].right;
+
+            console.log(
+                "treeMax consoling   -- %d",
+                self.nodes[value].ll.head.price
+            );
         }
-        return value;
+        return self.nodes[value].ll.head.price;
     }
 
     function _rotateLeft(bool isBuy, uint value) private {
@@ -581,13 +601,14 @@ contract Grid {
         // If the tree is empty, create a new node for the order
         if (tree.count == 0) {
             _insert(order.isBuy, 0x0, order.price);
+            // console.log("Inserted into tree --> %d", tree.count);
             IGridStructs.LL memory _ll = IGridStructs.LL({
                 head: order,
                 tail: order,
                 size: 1,
                 quantity: order.quantity
             });
-            tree.count++;
+            // tree.count++;
             tree.nodes[tree.root].ll = _ll;
         } else {
             // Find the node corresponding to the order price or create a new node if it doesn't exist
@@ -672,31 +693,44 @@ contract Grid {
     }
 
     function getAvCurrentPrice() public view returns (uint256) {
-        if (buyTree.count == 0 && sellTree.count == 0) return 0;
-        if (buyTree.count == 0) return getCurrentPrice(false);
-        if (sellTree.count == 0) return getCurrentPrice(true);
+        if (buyTree.count == 0 && sellTree.count == 0) {
+            console.log("entering both zero condition");
+            return 0;
+        }
+        if (buyTree.count == 0) {
+            console.log("entering buy tree zero case");
+            return getCurrentPrice(false);
+        }
+        if (sellTree.count == 0) {
+            console.log("entering sell zero case");
+            return getCurrentPrice(true);
+        }
+
+        console.log("entering neither zero case");
         return ((_treeMinimum(false) + _treeMaximum(true)) / 2);
     }
 
     // Function to delete an order from the order book
     function deleteOrder(bytes32 id) public onlyRouter {
+        console.log("price at delete order   -- %d", orders[id].price);
         // Choose the correct tree based on whether the order is a buy or sell
         IGridStructs.Tree storage tree = orders[id].isBuy ? buyTree : sellTree;
-
+        if (tree.count == 0) return;
         // Find the node corresponding to the order price
         IGridStructs.LL memory ll = _getNode(
             orders[id].isBuy,
             orders[id].price
         );
+
         RemoveByValue(addressToOrder[orders[id].trader], id);
         addressToOrder[orders[id].trader].pop;
         // require(ll != 0, "Order not found");
 
         ll.quantity -= orders[id].quantity;
         if (ll.size == 1) {
-            _remove(orders[id].isBuy, 0x0, ll.head.price);
+            _remove(orders[id].isBuy, 0x0, orders[id].price);
             delete orders[id]; // remove from map
-            tree.count--;
+            ll.size = 0;
             return;
         }
         // Find and remove the order from the linked list at the node
@@ -1045,6 +1079,11 @@ contract Grid {
 
     function matchOrders() internal {
         if (buyTree.count == 0 || sellTree.count == 0) return;
+        console.log(
+            "buyTree count is --> %d === sellTree count is --> %d",
+            buyTree.count,
+            sellTree.count
+        );
         IGridStructs.LL memory sellNodeLL = _getNode(
             false,
             _treeMinimum(false)
@@ -1058,9 +1097,12 @@ contract Grid {
             uint lastSell;
             uint lastBuy;
             if (sellOrder.quantity != 0 && buyOrder.quantity != 0) {
+                // console.log("sell order id is ===> %", sellOrder.id);
+                uint amount2;
                 if (sellOrder.quantity <= buyOrder.quantity) {
                     // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
                     // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
+
                     buyOrder.quantity -= sellOrder.quantity;
                     uint256 amount = (sellOrder.quantity *
                         buyOrder.price *
@@ -1069,7 +1111,7 @@ contract Grid {
                     (bool success, ) = sellOrder.trader.call{value: amount}("");
                     require(success, "Transfer failed.");
                     nextDayExe[buyOrder.trader] += sellOrder.quantity;
-
+                    lastSell = sellOrder.price;
                     deleteOrder(sellOrder.id);
                     sellOrder = sellNodeLL.head;
                 } else {
@@ -1084,7 +1126,7 @@ contract Grid {
                     (bool success, ) = sellOrder.trader.call{value: amount}("");
                     require(success, "Transfer failed.");
                     nextDayExe[buyOrder.trader] += buyOrder.quantity;
-
+                    lastBuy = buyOrder.price;
                     deleteOrder(buyOrder.id);
                     buyOrder = buyNodeLL.head;
                 }
