@@ -87,6 +87,8 @@ export default function Trade() {
   }
 
   const handleSwap = async () => {
+
+    console.log(process.env.REACT_APP_LIGHTHOUSE_API)
     
     const obj={amount:amount, type:type, price:price, direction:direction}
     console.log(obj);

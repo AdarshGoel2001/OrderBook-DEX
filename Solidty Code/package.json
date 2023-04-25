@@ -21,6 +21,7 @@
     "hardhat": "^2.14.0"
   },
   "dependencies": {
+    "env-cmd": "^10.1.0",
     "solidity-linked-list": "^5.1.0"
   }
 }

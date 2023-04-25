@@ -8,6 +8,7 @@ import lighthouse from "@lighthouse-web3/sdk";
 import { useAccount, useContract, useSigner } from "wagmi";
 import { useProvider } from "wagmi";
 
+
 export default function Reg() {
   const [name, setName] = useState("");
 
