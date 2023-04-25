@@ -10,13 +10,11 @@ contract Router {
     address grid;
     address admin;
     IGrid gridContract;
-    address usdc;
 
-    constructor(address _grid, address _usdc) {
+    constructor(address _grid) {
         grid = _grid;
         admin = msg.sender;
         gridContract = IGrid(grid);
-        usdc = _usdc;
     }
 
     modifier onlyAdmin() {
@@ -101,10 +99,6 @@ contract Router {
 
     function getNextExeBal(address consumer) public view returns (uint256) {
         return gridContract.getNextExe(consumer);
-    }
-
-    function _transferInUSDC(address _user, uint256 _amount) internal {
-        IERC20(usdc).transferFrom(_user, grid, _amount);
     }
 
     function whitelist(address _user) public onlyAdmin {

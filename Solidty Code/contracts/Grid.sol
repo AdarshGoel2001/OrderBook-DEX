@@ -19,7 +19,6 @@ contract Grid {
     uint256 daystart;
     address timeOracle;
     mapping(address => bytes32[]) addressToOrder;
-    address usdc = 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8;
     uint takerFee = 9;
     uint makerFee = 6;
 
@@ -717,19 +716,7 @@ contract Grid {
 
         // Rebalance the tree
         tree.root = _removeFixup(orders[id].isBuy, orders[id].price);
-        if (isTransaction) {
-            if (orders[id].isTaker) {
-                IERC20(usdc).transfer(
-                    orders[id].trader,
-                    orders[id].quantity * getCurrentPrice(orders[id].isBuy)
-                );
-            } else {
-                IERC20(usdc).transfer(
-                    orders[id].trader,
-                    orders[id].quantity * orders[id].price
-                );
-            }
-        }
+
         delete orders[id]; // remove from map
 
         // if (order.isBuy) {
