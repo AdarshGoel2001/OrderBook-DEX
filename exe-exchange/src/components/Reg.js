@@ -19,7 +19,6 @@ export default function Reg() {
 
   const [add, setAddress] = useState("");
   const [dob, setDob] = useState(0);
-  const [submit, setsubmit] = useState(false);
 
   const { data: signer, isError, isLoading } = useSigner();
   const { address, isConnected } = useAccount();
@@ -46,11 +45,18 @@ export default function Reg() {
   const submitHandler = () => {
     const upload = { name, aadhar, voterId, add, dob };
     const uploadObject = JSON.stringify(upload);
-    console.log(process.env.REACT_APP_LIGHTHOUSE_API);
-    console.log(uploadObject);
-    setsubmit(true);
-    uploadFileEncrypted(uploadObject);
+    const filename = name;
+    const file = new File([uploadObject], filename, { type: "text/plain" });
+    const url = URL.createObjectURL(file);
+
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "data.txt");
+    link.click();
   };
+
+  const uploadHandler = () => {};
+
   const encryptionSignature = async () => {
     const messageRequested = (await lighthouse.getAuthMessage(address)).data
       .message;
@@ -79,6 +85,8 @@ export default function Reg() {
        - uploadProgressCallback: function to get progress (optional)
     */
     const sig = await encryptionSignature();
+    console.log(sig);
+    console.log(e);
     const response = await lighthouse.uploadEncrypted(
       e,
       "b5f54b5b.a9704f1109444ea3a1831057a0585df4",
@@ -202,24 +210,39 @@ export default function Reg() {
             ></input>
           </div>
           <button type="text" class="submit" onClick={submitHandler}>
-            submit
+            Download KYC file
           </button>
-          
-            
-            <div class="subtitle" id="text1">
-              {CID}
-            </div>
-            <button onClick={copy1} class="copybtn">
-              Copy CID
+          <form action="" id="up">
+            <input
+              accept="text/*"
+              id="files"
+              form="up"
+              class="submit"
+              type="file"
+              onChangeCapture={uploadHandler}
+              placeholder="Upload encrypted to IPFS"
+            />
+            <button type="text" class="submit" onClick={uploadHandler}>
+              Upload encrypted to IPFS
             </button>
-            <div class="subtitle" id="text2">
-              {gateway}
-            </div>
-            <button onClick={copy2} class="copybtn">
-              Copy gateway
-            </button>
-            
-          
+          </form>
+
+          {CID != "" && (
+            <>
+              <div class="subtitle" id="text1">
+                {CID}
+              </div>
+              <button onClick={copy1} class="copybtn">
+                Copy CID
+              </button>
+              <div class="subtitle" id="text2">
+                {gateway}
+              </div>
+              <button onClick={copy2} class="copybtn">
+                Copy gateway
+              </button>
+            </>
+          )}
         </div>
       </div>
     </>
