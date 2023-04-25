@@ -68,8 +68,8 @@ export default function Trade() {
   const handledirection = () => {
     setdirection((value) => !value);
   };
-  const handletype = () => {
-    settype(!type);
+  const handletype = (e) => {
+    settype(e);
   };
 
   const handleAmount = (e) => {
@@ -87,6 +87,9 @@ export default function Trade() {
   }
 
   const handleSwap = async () => {
+    
+    const obj={amount:amount, type:type, price:price, direction:direction}
+    console.log(obj);
     const swap=await routerContract.placeOrder(amount, type, price, direction).then(()=>getPositions());
     getPositions();
     count++;
@@ -100,6 +103,7 @@ export default function Trade() {
           <h2 className="heading2">Trade</h2>
           <div className="selectorBlock">
             <button
+              // onChange={setdirection(true)}
               onClick={handledirection}
               className={
                 "selector selectorLeft" + (direction ? " selected" : "")
@@ -108,6 +112,7 @@ export default function Trade() {
               Buy EXE from ETH
             </button>
             <button
+              // onChange={setdirection(false)}
               onClick={handledirection}
               className={
                 "selector selectorRight" + (!direction ? " selected" : "")
@@ -118,14 +123,16 @@ export default function Trade() {
           </div>
           <div className="selectorBlock">
             <button
-              onClick={handletype}
-              className={"selector selectorLeft" + (type ? " selected" : "")}
+              // onChange={settype(true)}
+              onClick={()=>handletype(false)}
+              className={"selector selectorLeft" + (!type ? " selected" : "")}
             >
               Maker (Limit)
             </button>
             <button
-              onClick={handletype}
-              className={"selector selectorRight" + (!type ? " selected" : "")}
+              // onChange={settype(false)}
+              onClick={()=>handletype(true)}
+              className={"selector selectorRight" + (type ? " selected" : "")}
             >
               Taker (Market)
             </button>
@@ -140,6 +147,8 @@ export default function Trade() {
             className="input inputAmount"
             placeholder="Enter Amount"
             min="1"
+            value={amount}
+            onChange={(e) => setamount(e.target.value)}
           />
           {type && (
             <input
@@ -148,13 +157,15 @@ export default function Trade() {
               className="input inputPrice"
               placeholder="Enter Price"
               min={"1"}
+              value={price}
+              onChange={(e) => setprice(e.target.value)}
             />
           )}
           {!type && (
-          <p style={{ margin: "20px 0" }}>
-            Output :{direction ? (<>$</>) : (<>EXE</>)} {currPrice*amount}
-            {/* <span style={{ color: "#5fbf80", fontWeight: 600 }}>$30.00</span> */}
-          </p>
+            <p style={{ margin: "20px 0" }}>
+              Output :{direction ? <>$</> : <>EXE</>} {currPrice * amount}
+              {/* <span style={{ color: "#5fbf80", fontWeight: 600 }}>$30.00</span> */}
+            </p>
           )}
           <button className="metamask-connect heroButton" onClick={handleSwap}>
             Swap
