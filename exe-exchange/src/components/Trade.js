@@ -6,12 +6,6 @@ import { useAccount, useContract, useSigner } from "wagmi";
 import { fetchBalance } from "@wagmi/core";
 
 
-const balanceInfo = {
-  exe: "100",
-  nextexe: "5",
-  usdc: "100",
-};
-
 export default function Trade() {
   var count=1;
   const map=["Sell", "Buy"]
@@ -30,6 +24,7 @@ export default function Trade() {
   useEffect(() => {
     getPositions();
     getBalances();
+    getPrice();
   }, [isConnected]);
 
   const getPrice = async () =>{
@@ -72,14 +67,14 @@ export default function Trade() {
     settype(e);
   };
 
-  const handleAmount = (e) => {
-    setamount(e);
-    console.log(amount);
-  };
-  const handlePrice = (e) => {
-    setprice(e);
-    console.log(price);
-  };
+  // const handleAmount = (e) => {
+  //   setamount(e);
+  //   console.log(amount);
+  // };
+  // const handlePrice = (e) => {
+  //   setprice(e);
+  //   console.log(price);
+  // };
 
   const deleteOrder = async (id) =>{
     const del= await routerContract.deleteOrder(id).then(()=>console.log("Order deleted"));
@@ -94,6 +89,7 @@ export default function Trade() {
     console.log(obj);
     const swap=await routerContract.placeOrder(amount, type, price, direction).then(()=>getPositions());
     getPositions();
+    getPrice();
     count++;
   };
 
