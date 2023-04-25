@@ -1090,20 +1090,24 @@ contract Grid {
         );
         IGridStructs.LL memory buyNodeLL = _getNode(true, _treeMaximum(true));
         // while (sellNode != 0 && buyNode != 0) {
-        while (sellNodeLL.head.price <= buyNodeLL.head.price) {
+        while (
+            buyTree.count != 0 &&
+            sellTree.count != 0 &&
+            sellNodeLL.head.price <= buyNodeLL.head.price
+        ) {
+            console.log("phir chal gya bc");
             // If the sell price is less than or equal to the buy price, we have a match.
             IGridStructs.Order memory sellOrder = sellNodeLL.head;
             IGridStructs.Order memory buyOrder = buyNodeLL.head;
-            uint lastSell;
-            uint lastBuy;
             if (sellOrder.quantity != 0 && buyOrder.quantity != 0) {
                 // console.log("sell order id is ===> %", sellOrder.id);
-                uint amount2;
                 if (sellOrder.quantity <= buyOrder.quantity) {
                     // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
                     // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
 
                     buyOrder.quantity -= sellOrder.quantity;
+                    buyNodeLL.quantity -= sellOrder.quantity;
+                    sellNodeLL.quantity -= sellOrder.quantity;
                     uint256 amount = (sellOrder.quantity *
                         buyOrder.price *
                         (1000 - makerFee)) / 1000;
@@ -1111,14 +1115,19 @@ contract Grid {
                     (bool success, ) = sellOrder.trader.call{value: amount}("");
                     require(success, "Transfer failed.");
                     nextDayExe[buyOrder.trader] += sellOrder.quantity;
-                    lastSell = sellOrder.price;
-                    deleteOrder(sellOrder.id);
+                    if (sellNodeLL.head.quantity == 0) {
+                        // If all sell orders at this price have been matched, remove the node from the sell tree.
+                        console.log("last sell price - %s", sellOrder.price);
+                        _remove(false, 0x0, sellOrder.price);
+                    } else deleteOrder(sellOrder.id);
+                    sellNodeLL = _getNode(false, _treeMinimum(false));
                     sellOrder = sellNodeLL.head;
                 } else {
                     // Otherwise, the sell order is partially matched.
                     // emit Trade(sellOrder.user, buyOrder.user, buyOrder.quantity, sellNode.key);
                     sellOrder.quantity -= buyOrder.quantity;
-
+                    buyNodeLL.quantity -= buyOrder.quantity;
+                    sellNodeLL.quantity -= buyOrder.quantity;
                     uint256 amount = (buyOrder.quantity *
                         buyOrder.price *
                         (1000 - makerFee)) / 1000;
@@ -1126,18 +1135,25 @@ contract Grid {
                     (bool success, ) = sellOrder.trader.call{value: amount}("");
                     require(success, "Transfer failed.");
                     nextDayExe[buyOrder.trader] += buyOrder.quantity;
-                    lastBuy = buyOrder.price;
-                    deleteOrder(buyOrder.id);
+                    if (buyNodeLL.head.quantity == 0) {
+                        console.log("last buy price - %s", buyOrder.price);
+                        _remove(true, 0x0, buyOrder.price);
+                    } else deleteOrder(buyOrder.id);
+                    buyNodeLL = _getNode(true, _treeMaximum(true));
                     buyOrder = buyNodeLL.head;
                 }
             }
-            if (sellNodeLL.head.quantity == 0) {
-                // If all sell orders at this price have been matched, remove the node from the sell tree.
-                _remove(false, 0x0, lastSell);
-            }
-            if (buyNodeLL.head.quantity == 0) {
-                _remove(true, 0x0, lastBuy);
-            }
+            console.log("buyNodeLL  - %s",buyNodeLL.head.price);
+            console.log("sellNodeLL  - %s",sellNodeLL.head.price);
+            // if (sellNodeLL.head.quantity == 0) {
+            //     // If all sell orders at this price have been matched, remove the node from the sell tree.
+            //     console.log("last sell price - %s", lastSell);
+            //     _remove(false, 0x0, lastSell);
+            // }
+            // if (buyNodeLL.head.quantity == 0) {
+            //     console.log("last buy price - %s", lastBuy);
+            //     _remove(true, 0x0, lastBuy);
+            // }
         }
         // }
     }
