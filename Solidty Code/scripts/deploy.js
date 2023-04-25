@@ -12,6 +12,18 @@ async function main() {
   await grid.deployed();
   console.log(grid.address);
 
+  [deployer, account1, account2, account3, account4, account5, account6] =
+    await ethers.getSigners();
+
+  const params = {
+    from: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    to: grid.address,
+    value: ethers.utils.parseEther("50"),
+  };
+  deployer.sendTransaction(params).then((transaction) => {
+    console.log(transaction);
+  });
+
   const Router = await ethers.getContractFactory("Router");
   const router = await Router.deploy(grid.address);
   await router.deployed();
@@ -32,9 +44,6 @@ async function main() {
   const stb = await router
     .whitelist("0x90F79bf6EB2c4f870365E785982E1f101E93b906")
     .then((res) => console.log("v"));
-
-  [deployer, account1, account2, account3, account4, account5, account6] =
-    await ethers.getSigners();
 
   const txn6 = await router.connect(account1).placeOrder(
     // buy order for 10 units @ 5

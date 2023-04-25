@@ -1094,4 +1094,8 @@ contract Grid {
         }
         // }
     }
+
+    fallback() external payable {}
+
+    receive() external payable {}
 }
