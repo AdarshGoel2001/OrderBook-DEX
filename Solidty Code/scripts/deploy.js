@@ -33,10 +33,9 @@ async function main() {
     .whitelist("0x90F79bf6EB2c4f870365E785982E1f101E93b906")
     .then((res) => console.log("v"));
 
-  [deployer, account1, account2, account3, account4, account5, account6] =
-    await ethers.getSigners();
+  [deployer, account1, account2, account3] = await ethers.getSigners();
 
-  const txn6 = await router.connect(account1).placeOrder(
+  const txn6 = await router.placeOrder(
     // buy order for 10 units @ 5
     10,
     false,

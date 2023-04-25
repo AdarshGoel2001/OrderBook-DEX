@@ -198,6 +198,8 @@ contract Grid {
         } else {
             self.nodes[cursor].right = value;
         }
+        IGridStructs.Tree storage sel = isBuy ? buyTree : sellTree;
+        sel.nodes[value] = nValue;
         _insertFixup(isBuy, value);
     }
 
@@ -577,7 +579,7 @@ contract Grid {
         addressToOrder[order.trader].push(order.id);
 
         // If the tree is empty, create a new node for the order
-        if (tree.root == 0) {
+        if (tree.count == 0) {
             _insert(order.isBuy, 0x0, order.price);
             IGridStructs.LL memory _ll = IGridStructs.LL({
                 head: order,
@@ -585,6 +587,7 @@ contract Grid {
                 size: 1,
                 quantity: order.quantity
             });
+            tree.count++;
             tree.nodes[tree.root].ll = _ll;
         } else {
             // Find the node corresponding to the order price or create a new node if it doesn't exist
@@ -676,7 +679,7 @@ contract Grid {
     }
 
     // Function to delete an order from the order book
-    function deleteOrder(bytes32 id, bool isTransaction) public onlyRouter {
+    function deleteOrder(bytes32 id) public onlyRouter {
         // Choose the correct tree based on whether the order is a buy or sell
         IGridStructs.Tree storage tree = orders[id].isBuy ? buyTree : sellTree;
 
@@ -691,8 +694,10 @@ contract Grid {
 
         ll.quantity -= orders[id].quantity;
         if (ll.size == 1) {
-            _remove(orders[id].isBuy, 0x0, orders[id].price);
+            _remove(orders[id].isBuy, 0x0, ll.head.price);
             delete orders[id]; // remove from map
+            tree.count--;
+            return;
         }
         // Find and remove the order from the linked list at the node
         IGridStructs.Order memory curr = ll.head;
@@ -981,7 +986,7 @@ contract Grid {
                         1000;
 
                     nextDayExe[order.trader] += amount3;
-                    if (check) deleteOrder(sellNodeLL.head.id, false);
+                    if (check) deleteOrder(sellNodeLL.head.id);
                     sellNodeLL = _getNode(false, _treeMinimum(false));
                 }
                 (bool success, ) = order.trader.call{
@@ -1026,7 +1031,7 @@ contract Grid {
                         1000;
 
                     nextDayExe[order.trader] += amount3;
-                    if (check) deleteOrder(buyNodeLL.head.id, false);
+                    if (check) deleteOrder(buyNodeLL.head.id);
                     buyNodeLL = _getNode(false, _treeMinimum(false));
                 }
                 (bool success, ) = order.trader.call{
@@ -1065,7 +1070,7 @@ contract Grid {
                     require(success, "Transfer failed.");
                     nextDayExe[buyOrder.trader] += sellOrder.quantity;
 
-                    deleteOrder(sellOrder.id, false);
+                    deleteOrder(sellOrder.id);
                     sellOrder = sellNodeLL.head;
                 } else {
                     // Otherwise, the sell order is partially matched.
@@ -1080,7 +1085,7 @@ contract Grid {
                     require(success, "Transfer failed.");
                     nextDayExe[buyOrder.trader] += buyOrder.quantity;
 
-                    deleteOrder(buyOrder.id, false);
+                    deleteOrder(buyOrder.id);
                     buyOrder = buyNodeLL.head;
                 }
             }

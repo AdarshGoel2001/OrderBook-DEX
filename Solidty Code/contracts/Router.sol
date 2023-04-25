@@ -74,7 +74,7 @@ contract Router {
             next: 0
         });
         bytes32 id = keccak256(
-            abi.encodePacked(order.trader, order.quantity, order.price)
+            abi.encodePacked(order.trader, order.quantity, order.price, block.timestamp)
         );
         order.id = id;
         gridContract.addOrder(order, id);
