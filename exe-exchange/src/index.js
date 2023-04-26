@@ -15,19 +15,19 @@ import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { polygon, polygonMumbai, hardhat } from "wagmi/chains";
 import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 
-// const chains = [polygon, polygonMumbai];
-const chains = [hardhat];
+const chains = [polygon, polygonMumbai];
+// const chains = [hardhat];
 const projectId = process.env.REACT_APP_W3M_PROJECTID;
 
-// const { provider } = configureChains(chains, [w3mProvider({ projectId })]);
+const { provider } = configureChains(chains, [w3mProvider({ projectId })]);
 
-const { provider } = configureChains(chains, [
-  jsonRpcProvider({
-    rpc: (chain) => ({
-      http: `http://127.0.0.1:8545/`,
-    }),
-  }),
-]);
+// const { provider } = configureChains(chains, [
+//   jsonRpcProvider({
+//     rpc: (chain) => ({
+//       http: `http://127.0.0.1:8545/`,
+//     }),
+//   }),
+// ]);
 
 const wagmiClient = createClient({
   autoConnect: true,
