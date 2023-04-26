@@ -25,7 +25,7 @@ contract Grid {
 
     uint maxBuy;
     uint prevMaxBuy;
-    uint minSell = 1000000000000;
+    uint minSell = 100000;
     uint prevMinSell;
     mapping(uint => uint) buyPtoQ;
     uint[] priceKeySetBuy;
@@ -167,7 +167,7 @@ contract Grid {
         return _getNodeCount(isBuy, self.root);
     }
 
-    function _insert(bool isBuy, bytes32 key, uint value) internal {
+    function _insert(bool isBuy, uint value) internal {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
         self.count++;
         require(
@@ -369,7 +369,7 @@ contract Grid {
             value = self.nodes[value].left;
             i++;
         }
-        return minSell;
+        return value;
     }
 
     function _treeMaximum(bool isBuy) public view returns (uint price) {
@@ -392,7 +392,7 @@ contract Grid {
             // );
             i++;
         }
-        return maxBuy;
+        return value;
     }
 
     function _rotateLeft(bool isBuy, uint value) private {
@@ -638,7 +638,7 @@ contract Grid {
 
         // If the tree is empty, create a new node for the order
         if (tree.count == 0) {
-            _insert(order.isBuy, 0x0, order.price);
+            _insert(order.isBuy, order.price);
             // console.log("Inserted into tree --> %d", tree.count);
             IGridStructs.LL memory _ll = IGridStructs.LL({
                 head: order,
@@ -654,7 +654,7 @@ contract Grid {
             IGridStructs.LL memory ll = _getNode(order.isBuy, order.price);
 
             if (ll.size == 0) {
-                _insert(order.isBuy, 0x0, order.price);
+                _insert(order.isBuy, order.price);
                 ll.head = order;
                 ll.tail = order;
                 ll.size = 1;
@@ -699,7 +699,7 @@ contract Grid {
         if (isBuy) {
             return maxBuy;
         }
-        return minSell;
+        return minSell == 100000 ? 0 : minSell;
     }
 
     function IndexOf(
