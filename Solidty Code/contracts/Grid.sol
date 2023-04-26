@@ -863,8 +863,7 @@ contract Grid {
             orders[id].price
         );
 
-        // RemoveByValue(addressToOrder[orders[id].trader], id);
-        // if(addressToOrder[orders[id].trader].length>=2) addressToOrder[orders[id].trader].pop;
+        RemoveByValue(addressToOrder[orders[id].trader], id);
         // require(ll != 0, "Order not found");
 
         ll.quantity -= orders[id].quantity;
