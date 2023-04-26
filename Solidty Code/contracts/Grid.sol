@@ -23,6 +23,15 @@ contract Grid {
     uint takerFee = 9;
     uint makerFee = 6;
 
+    uint maxBuy;
+    uint prevMaxBuy;
+    uint minSell = 1000000000000;
+    uint prevMinSell;
+    mapping(uint => uint) buyPtoQ;
+    uint[] priceKeySetBuy;
+    mapping(uint => uint) sellPtoQ;
+    uint[] priceKeySetSell;
+
     function checkIfWhitelisted(address trader) public view returns (bool) {
         if (whitelisted[trader]) return true;
         return false;
@@ -211,13 +220,13 @@ contract Grid {
         _insertFixup(isBuy, value);
     }
 
-    function _remove(bool isBuy, bytes32 key, uint value) internal {
-        console.log("remove called %s",value);
+    function _remove(bool isBuy, uint value) internal {
+        console.log("remove called %s", value);
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
         if (self.count == 0) return;
         self.count--;
 
-        console.log("inside remove price   -- %s", isBuy);
+        // console.log("inside remove price   -- %s", isBuy);
         require(
             value != EMPTY,
             "OrderStatisticsTree(407) - Value to delete cannot be zero "
@@ -230,7 +239,7 @@ contract Grid {
         // uint rowToDelete = nValue.keyMap[key];
         // nValue.keys[rowToDelete] = nValue.keys[nValue.keys.length - uint(1)];
         // nValue.keyMap[key] = rowToDelete;
-        // nValue.keys.length--;
+        // nValue.keys.pop;
         uint probe;
         uint cursor;
         if (nValue.keys.length == 0) {
@@ -321,62 +330,69 @@ contract Grid {
         return priceArray;
     }
 
-    function inOrderBuyHelper(
-        uint root,
-        uint[2][10] memory priceArray
-    ) public view {
-        uint[100] memory stac;
-        uint sc = 0;
-        stac[sc++] = (root);
-        uint curr = root;
-        uint count = 0;
-        while (curr != 0 && count < 10 && count < buyTree.count) {
-            while (curr != 0) {
-                stac[sc++] = (curr);
-                curr = sellTree.nodes[root].right;
-            }
-            curr = stac[0];
-            sc--;
-            priceArray[count] = [
-                sellTree.nodes[curr].ll.head.price,
-                sellTree.nodes[curr].ll.quantity
-            ];
-            curr = sellTree.nodes[root].left;
-            count++;
-        }
-    }
+    // function inOrderBuyHelper(
+    //     uint root,
+    //     uint[2][10] memory priceArray
+    // ) public view {
+    //     uint[100] memory stac;
+    //     uint sc = 0;
+    //     stac[sc++] = (root);
+    //     uint curr = root;
+    //     uint count = 0;
+    //     while (curr != 0 && count < 10 && count < buyTree.count) {
+    //         while (curr != 0) {
+    //             stac[sc++] = (curr);
+    //             curr = sellTree.nodes[root].right;
+    //         }
+    //         curr = stac[0];
+    //         sc--;
+    //         priceArray[count] = [
+    //             sellTree.nodes[curr].ll.head.price,
+    //             sellTree.nodes[curr].ll.quantity
+    //         ];
+    //         curr = sellTree.nodes[root].left;
+    //         count++;
+    //     }
+    // }
 
-    function inOrderBuy() public view returns (uint[2][10] memory) {
-        uint[2][10] memory priceArray;
-        inOrderSellHelper(buyTree.root, priceArray);
-        return priceArray;
-    }
+    // function inOrderBuy() public view returns (uint[2][10] memory) {
+    //     uint[2][10] memory priceArray;
+    //     inOrderBuyHelper(buyTree.root, priceArray);
+    //     return priceArray;
+    // }
 
     function _treeMinimum(bool isBuy) public view returns (uint price) {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
         uint value = self.root;
-        while (self.nodes[value].left != EMPTY) {
+        uint i = 1;
+        while (i <= self.count && self.nodes[value].left != EMPTY) {
             value = self.nodes[value].left;
+            i++;
         }
-        return self.nodes[value].ll.head.price;
+        return minSell;
     }
 
     function _treeMaximum(bool isBuy) public view returns (uint price) {
         IGridStructs.Tree storage self = isBuy ? buyTree : sellTree;
         uint value = self.root;
-        console.log(
-            "treeMax consoling   -- %d",
-            self.nodes[value].ll.head.price
-        );
-        while (self.nodes[value].right != EMPTY) {
+        // console.log(
+        //     "treeMax consoling   -- %d",
+        //     self.nodes[value].ll.head.price
+        // );
+        if (value == 0) {
+            return 0;
+        }
+        uint i = 0;
+        while (i <= self.count && self.nodes[value].right != EMPTY) {
             value = self.nodes[value].right;
 
-            console.log(
-                "treeMax consoling   -- %d",
-                self.nodes[value].ll.head.price
-            );
+            // console.log(
+            //     "treeMax consoling   -- %d",
+            //     self.nodes[value].ll.head.price
+            // );
+            i++;
         }
-        return self.nodes[value].ll.head.price;
+        return maxBuy;
     }
 
     function _rotateLeft(bool isBuy, uint value) private {
@@ -588,6 +604,8 @@ contract Grid {
 
     // Function to add an order to the order book
     function addOrder(IGridStructs.Order memory order, bytes32 id) external {
+        console.log("ALL IS WELL PLZ");
+
         // Choose the correct tree based on whether the order is a buy or sell
         if (order.isTaker) {
             orders[id] = order;
@@ -596,6 +614,25 @@ contract Grid {
             return;
         }
         IGridStructs.Tree storage tree = order.isBuy ? buyTree : sellTree;
+        console.log("now i would give up again %s", priceKeySetBuy.length);
+        if (order.isBuy) {
+            uint i = IndexOf2(priceKeySetBuy, order.price);
+            if (i == priceKeySetBuy.length) priceKeySetBuy.push(order.price);
+            if (order.price >= maxBuy) {
+                prevMaxBuy = maxBuy;
+                maxBuy = order.price;
+            }
+            buyPtoQ[order.price] += order.quantity;
+        } else {
+            uint i = IndexOf2(priceKeySetSell, order.price);
+            if (i == priceKeySetSell.length) priceKeySetSell.push(order.price);
+            if (order.price <= minSell) {
+                prevMinSell = minSell;
+                minSell = order.price;
+            }
+            sellPtoQ[order.price] += order.quantity;
+        }
+
         orders[id] = order;
         addressToOrder[order.trader].push(order.id);
 
@@ -614,7 +651,6 @@ contract Grid {
         } else {
             // Find the node corresponding to the order price or create a new node if it doesn't exist
             // bool ex=_exists(order.isBuy, order.price);
-
             IGridStructs.LL memory ll = _getNode(order.isBuy, order.price);
 
             if (ll.size == 0) {
@@ -661,14 +697,25 @@ contract Grid {
 
     function getCurrentPrice(bool isBuy) public view returns (uint) {
         if (isBuy) {
-            return _treeMaximum(isBuy);
+            return maxBuy;
         }
-        return _treeMinimum(isBuy);
+        return minSell;
     }
 
     function IndexOf(
         bytes32[] memory values,
         bytes32 value
+    ) public pure returns (uint) {
+        uint i = 0;
+        while (i < values.length && values[i] != value) {
+            i++;
+        }
+        return i;
+    }
+
+    function IndexOf2(
+        uint[] memory values,
+        uint value
     ) public pure returns (uint) {
         uint i = 0;
         while (i < values.length && values[i] != value) {
@@ -690,25 +737,79 @@ contract Grid {
                 values[i] = values[i + 1];
                 i++;
             }
+            values[values.length - 1] = 0;
+        }
+    }
+
+    function goodDeleteorder(bytes32 id) public {
+        console.log(
+            "anything not closfsfsde to reallll %s",
+            orders[id].quantity
+        );
+        if (orders[id].isBuy) {
+            buyPtoQ[orders[id].price] -= orders[id].quantity;
+            console.log("orders[id].quantity is ==> %s", orders[id].price);
+            if (buyPtoQ[maxBuy] == 0) {
+                console.log("In delete order gege");
+                maxBuy = prevMaxBuy;
+                // maxBuy = orders[id];
+                // prevMaxBuy=priceKeySetBuy
+                uint just = maxBuy;
+                uint res;
+                for (uint i = priceKeySetBuy.length - 1; i >= 0; i--) {
+                    if (
+                        priceKeySetBuy[i] < just &&
+                        buyPtoQ[priceKeySetBuy[i]] != 0
+                    ) {
+                        res = priceKeySetBuy[i] > res ? priceKeySetBuy[i] : res;
+                    }
+                }
+                prevMaxBuy = res;
+            }
+        } else {
+            sellPtoQ[orders[id].price] -= orders[id].quantity;
+            console.log(
+                "orders[id].quantity for selling is ==> %s",
+                orders[id].price
+            );
+            if (sellPtoQ[minSell] == 0) {
+                console.log("In delete order hulu");
+                prevMinSell = minSell;
+
+                uint just = minSell;
+                uint res;
+                for (uint i = 0; i < priceKeySetSell.length; i++) {
+                    if (
+                        priceKeySetSell[i] > just &&
+                        sellPtoQ[priceKeySetSell[i]] != 0
+                    ) {
+                        res = priceKeySetSell[i] < res
+                            ? priceKeySetSell[i]
+                            : res;
+                    }
+                }
+                prevMinSell = res;
+                // minSell = orders[id];
+            }
         }
     }
 
     function getAvCurrentPrice() public view returns (uint256) {
         if (buyTree.count == 0 && sellTree.count == 0) {
-            console.log("entering both zero condition");
+            // console.log("entering both zero condition");
             return 0;
         }
         if (buyTree.count == 0) {
-            console.log("entering buy tree zero case");
+            // console.log("entering buy tree zero case");
             return getCurrentPrice(false);
         }
         if (sellTree.count == 0) {
-            console.log("entering sell zero case");
+            // console.log("entering sell zero case");
             return getCurrentPrice(true);
         }
 
-        console.log("entering neither zero case");
-        return ((_treeMinimum(false) + _treeMaximum(true)) / 2);
+        // console.log("entering neither zero case");
+        return ((maxBuy + minSell) / 2);
     }
 
     // Function to delete an order from the order book
@@ -717,19 +818,58 @@ contract Grid {
         // Choose the correct tree based on whether the order is a buy or sell
         IGridStructs.Tree storage tree = orders[id].isBuy ? buyTree : sellTree;
         if (tree.count == 0) return;
+
+        // goodDeleteorder(id);
+        // console.log("IS THIS BUY %s", orders[id].isBuy);
+        // if (orders[id].isBuy) {
+        //     buyPtoQ[orders[id].price] -= orders[id].quantity;
+        //     console.log("orders[id].quantity is ==> %s", orders[id].price);
+        //     if (buyPtoQ[maxBuy] == 0) {
+        //         console.log("In delete order gege");
+        //         maxBuy = prevMaxBuy;
+        //         // maxBuy = orders[id];
+        //         // prevMaxBuy=priceKeySetBuy
+        //         uint just=maxBuy;
+        //         uint res;
+        //         for(uint i=priceKeySetBuy.length-1;i>=0;i--){
+        //             if(priceKeySetBuy[i]<just && buyPtoQ[priceKeySetBuy[i]]!=0){
+        //                 res=priceKeySetBuy[i]>res?priceKeySetBuy[i]:res;
+        //             }
+        //         }
+        //         prevMaxBuy=res;
+        //     }
+        // } else {
+        //     sellPtoQ[orders[id].price] -= orders[id].quantity;
+        //     console.log("orders[id].quantity for selling is ==> %s",orders[id].price);
+        //     if (sellPtoQ[minSell]==0) {
+        //         console.log("In delete order hulu");
+        //         prevMinSell = minSell;
+
+        //         uint just=minSell;
+        //         uint res;
+        //         for(uint i=0;i<priceKeySetSell.length;i++){
+        //             if(priceKeySetSell[i]>just && sellPtoQ[priceKeySetSell[i]]!=0){
+        //                 res=priceKeySetSell[i]<res?priceKeySetSell[i]:res;
+        //             }
+        //         }
+        //         prevMinSell=res;
+        //         // minSell = orders[id];
+        //     }
+        // }
+
         // Find the node corresponding to the order price
         IGridStructs.LL memory ll = _getNode(
             orders[id].isBuy,
             orders[id].price
         );
 
-        RemoveByValue(addressToOrder[orders[id].trader], id);
-        addressToOrder[orders[id].trader].pop;
+        // RemoveByValue(addressToOrder[orders[id].trader], id);
+        // if(addressToOrder[orders[id].trader].length>=2) addressToOrder[orders[id].trader].pop;
         // require(ll != 0, "Order not found");
 
         ll.quantity -= orders[id].quantity;
         if (ll.size == 1) {
-            _remove(orders[id].isBuy, 0x0, orders[id].price);
+            _remove(orders[id].isBuy, orders[id].price);
             delete orders[id]; // remove from map
             ll.size = 0;
             return;
@@ -751,7 +891,10 @@ contract Grid {
             prev.next = curr.next;
         }
         delete curr;
-        ll.size--;
+        if (ll.size > 0) {
+            ll.size--;
+        }
+
         // If the linked list is now empty, delete the node from the tree
 
         // Rebalance the tree
@@ -764,196 +907,8 @@ contract Grid {
         // } else {
         //     orderBook.rootSell = root;
         // }
-        matchOrders();
+        // matchOrders();
     }
-
-    // pragma solidity ^0.8.0;
-
-    // // Order struct to represent a single order
-    // struct Order {
-    //     address user;
-    //     uint256 amount;
-    //     uint256 price;
-    //     bool isBuy;
-    // }
-
-    // // Node struct to represent a single node in the AVL tree
-    // struct Node {
-    //     uint256 price;
-    //     int256 balanceFactor;
-    //     Node left;
-    //     Node right;
-    //     Order[] orders;
-    // }
-
-    // // Buy and sell trees
-    // Node buyTree;
-    // Node sellTree;
-
-    // Get a node with the given price, or create one if it doesn't exist
-    // function getNode(Node tree, uint256 price) internal returns (Node storage) {
-    //     if (tree.price == price) {
-    //         return tree;
-    //     } else if (tree.price > price) {
-    //         if (tree.left.price == 0) {
-    //             tree.left.price = price;
-    //         }
-    //         return getNode(tree.left, price);
-    //     } else {
-    //         if (tree.right.price == 0) {
-    //             tree.right.price = price;
-    //         }
-    //         return getNode(tree.right, price);
-    //     }
-    // }
-
-    // Insert an order into the tree
-    // function insertNode(Node tree, Order memory order) internal {
-    //     Node storage node = getNode(tree, order.price);
-    //     node.orders.push(order);
-    //     balanceNode(node);
-    // }
-
-    // Balances a node in the AVL tree
-    // function balanceNode(Node storage node) internal {
-    //     int256 balance = getBalanceFactor(node);
-    //     if (balance > 1) {
-    //         if (getBalanceFactor(node.left) < 0) {
-    //             rotateLeft(node.left);
-    //         }
-    //         rotateRight(node);
-    //     } else if (balance < -1) {
-    //         if (getBalanceFactor(node.right) > 0) {
-    //             rotateRight(node.right);
-    //         }
-    //         rotateLeft(node);
-    //     }
-    // }
-
-    // Rotates a node to the right
-    // function rotateRight(Node storage node) internal {
-    //     Node storage newParent = node.left;
-    //     node.left = newParent.right;
-    //     newParent.right = node;
-    //     node.balanceFactor = getBalanceFactor(node);
-    //     newParent.balanceFactor = getBalanceFactor(newParent);
-    //     node = newParent;
-    // }
-
-    // // Rotates a node to the left
-    // function rotateLeft(Node storage node) internal {
-    //     Node storage newParent = node.right;
-    //     node.right = newParent.left;
-    //     newParent.left = node;
-    //     node.balanceFactor = getBalanceFactor(node);
-    //     newParent.balanceFactor = getBalanceFactor(newParent);
-    //     node = newParent;
-    // }
-
-    // // Gets the balance factor of a node in the AVL tree
-    // function getBalanceFactor(
-    //     Node storage node
-    // ) internal view returns (int256) {
-    //     return int256(height(node.left)) - int256(height(node.right));
-    // }
-
-    // Gets the height of a node in the AVL tree
-    // function height(Node storage node) internal view returns (uint256) {
-    //     if (node.price == 0) {
-    //         return 0;
-    //     } else {
-    //         uint256 leftHeight = height(node.left);
-    //         uint256 rightHeight = height(node.right);
-    //         if (leftHeight > rightHeight) {
-    //             return leftHeight + 1;
-    //         } else {
-    //             return rightHeight + 1;
-    //         }
-    //     }
-    // }
-
-    // function deleteNode(
-    //     uint256 price,
-    //     bool orderType,
-    //     OrderBook storage orderBook
-    // ) public returns (bool) {
-    //     Node storage root = orderType ? orderBook.rootBuy : orderBook.rootSell;
-
-    //     Node storage node = getNode(root, price);
-    //     if (node.price != price) {
-    //         return false; // Node not found
-    //     }
-
-    //     // Case 1: Node has no children
-    //     if (node.left == 0 && node.right == 0) {
-    //         if (node.parent == 0) {
-    //             root = 0; // Root node
-    //         } else if (node.parent.left == node) {
-    //             node.parent.left = 0; // Left child
-    //         } else {
-    //             node.parent.right = 0; // Right child
-    //         }
-    //         balanceNode(node.parent);
-    //         return true;
-    //     }
-
-    //     // Case 2: Node has one child
-    //     if (node.left == 0 || node.right == 0) {
-    //         Node storage child = node.left != 0 ? node.left : node.right;
-    //         child.parent = node.parent;
-    //         if (node.parent == 0) {
-    //             root[orderType] = child; // Root node
-    //         } else if (node.parent.left == node) {
-    //             node.parent.left = child; // Left child
-    //         } else {
-    //             node.parent.right = child; // Right child
-    //         }
-    //         balanceNode(child);
-    //         return true;
-    //     }
-
-    //     // Case 3: Node has two children
-    //     Node storage successor = getSuccessor(node);
-    //     node.price = successor.price;
-    //     node.orders = successor.orders;
-    //     deleteNode(successor.price, orderType, orderBook);
-    //     return true;
-    // }
-
-    // function getSuccessor(
-    //     Node storage node
-    // ) internal view returns (Node storage) {
-    //     if (node.right != 0) {
-    //         // If the node has a right child, its successor is the leftmost node of its right subtree.
-    //         node = node.right;
-    //         while (node.left != 0) {
-    //             node = node.left;
-    //         }
-    //         return node;
-    //     } else {
-    //         // If the node does not have a right child, its successor is the nearest ancestor whose left child is also an ancestor of the node.
-    //         Node storage parent = node.parent;
-    //         while (parent != 0 && node == parent.right) {
-    //             node = parent;
-    //             parent = node.parent;
-    //         }
-    //         return parent;
-    //     }
-    // }
-
-    // function findMinPrice(Node memory node) internal view returns (uint256) {
-    //     if (node.left != 0) {
-    //         return findMinPrice(node.left);
-    //     }
-    //     return node.price;
-    // }
-
-    // function findMaxPrice(Node memory node) internal view returns (uint256) {
-    //     if (node.right != 0) {
-    //         return findMaxPrice(node.right);
-    //     }
-    //     return node.price;
-    // }
 
     function getTakerFee() internal view returns (uint) {
         return takerFee;
@@ -1078,68 +1033,122 @@ contract Grid {
         delete orders[id];
     }
 
+    function printAllOrders() public view {
+        address a = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+        address b = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+        address c = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
+        bytes32[] memory orsa = getOrdersForAddress(a);
+        bytes32[] memory orsb = getOrdersForAddress(b);
+        bytes32[] memory orsc = getOrdersForAddress(c);
+        for (uint i = 0; i < orsa.length; i++) {
+            // console.log("logging order price -%s --- quantity-%d",getOrderByID(orsa[i]).price, getOrderByID(orsa[i]).quantity);
+        }
+        for (uint i = 0; i < orsb.length; i++) {
+            // console.log("logging order %s --- %d",getOrderByID(orsb[i]).price, getOrderByID(orsb[i]).quantity);
+        }
+        for (uint i = 0; i < orsc.length; i++) {
+            // console.log("logging order %s --- %d",getOrderByID(orsc[i]).price, getOrderByID(orsc[i]).quantity);
+        }
+    }
+
     function matchOrders() internal {
         if (buyTree.count == 0 || sellTree.count == 0) return;
-        console.log(
-            "buyTree count is --> %d === sellTree count is --> %d",
-            buyTree.count,
-            sellTree.count
-        );
+        // console.log(
+        //     "buyTree count is --> %d === sellTree count is --> %d",
+        //     buyTree.count,
+        //     sellTree.count
+        // );
         IGridStructs.LL memory sellNodeLL = _getNode(
             false,
             _treeMinimum(false)
         );
         IGridStructs.LL memory buyNodeLL = _getNode(true, _treeMaximum(true));
         // while (sellNode != 0 && buyNode != 0) {
+        uint i = 0;
         while (
+            i < buyTree.count &&
+            i < sellTree.count &&
             buyTree.count != 0 &&
             sellTree.count != 0 &&
             sellNodeLL.head.price <= buyNodeLL.head.price
         ) {
-            console.log("buyTree.count",buyTree.count);
-            console.log("sellTree.count",sellTree.count);
+            i++;
+            // printAllOrders();
+            console.log("buyTree.count", buyTree.count);
+            console.log("sellTree.count", sellTree.count);
             // If the sell price is less than or equal to the buy price, we have a match.
             IGridStructs.Order memory sellOrder = sellNodeLL.head;
             IGridStructs.Order memory buyOrder = buyNodeLL.head;
-            if (sellOrder.quantity != 0 && buyOrder.quantity != 0) {
-                // console.log("sell order id is ===> %", sellOrder.id);
-                if (sellOrder.quantity <= buyOrder.quantity) {
-                    // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
-                    // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
+            // console.log("just outside sell= %d -- buy= %d ", sellOrder.quantity, buyOrder.quantity);
+            // if(buyOrder.quantity==0){
+            //     deleteOrder(buyOrder.id);
+            // }
+            // if(sellOrder.quantity==0){
+            //     deleteOrder(sellOrder.id);
+            // }
+            // if (sellOrder.quantity != 0 && buyOrder.quantity != 0) {
+            // console.log("ahhh");
+            // console.log("sell order id is ===> %", sellOrder.id);
+            if (sellOrder.quantity <= buyOrder.quantity) {
+                // If the sell order quantity is less than or equal to the buy order quantity, the sell order is fully matched.
+                // emit Trade(sellOrder.user, buyOrder.user, sellOrder.quantity, sellNode.key);
 
-                    buyOrder.quantity -= sellOrder.quantity;
-                    buyNodeLL.quantity -= sellOrder.quantity;
-                    sellNodeLL.quantity -= sellOrder.quantity;
-                    uint256 amount = (sellOrder.quantity *
-                        buyOrder.price *
-                        (1000 - makerFee)) / 1000;
+                buyOrder.quantity -= sellOrder.quantity;
+                sellOrder.quantity = 0;
+                buyNodeLL.quantity -= sellOrder.quantity;
+                sellNodeLL.quantity -= sellOrder.quantity;
+                uint256 amount = (sellOrder.quantity *
+                    buyOrder.price *
+                    (1000 - makerFee)) / 1000;
 
-                    (bool success, ) = sellOrder.trader.call{value: amount}("");
-                    require(success, "Transfer failed.");
-                    nextDayExe[buyOrder.trader] += sellOrder.quantity;
-                    deleteOrder(sellOrder.id);
-                    sellNodeLL = _getNode(false, _treeMinimum(false));
-                    sellOrder = sellNodeLL.head;
-                } else {
-                    // Otherwise, the sell order is partially matched.
-                    // emit Trade(sellOrder.user, buyOrder.user, buyOrder.quantity, sellNode.key);
-                    sellOrder.quantity -= buyOrder.quantity;
-                    buyNodeLL.quantity -= buyOrder.quantity;
-                    sellNodeLL.quantity -= buyOrder.quantity;
-                    uint256 amount = (buyOrder.quantity *
-                        buyOrder.price *
-                        (1000 - makerFee)) / 1000;
+                (bool success, ) = sellOrder.trader.call{value: amount}("");
+                require(success, "Transfer failed.");
+                nextDayExe[buyOrder.trader] += sellOrder.quantity;
 
-                    (bool success, ) = sellOrder.trader.call{value: amount}("");
-                    require(success, "Transfer failed.");
-                    nextDayExe[buyOrder.trader] += buyOrder.quantity;
+                if (buyOrder.quantity == 0) {
+                    goodDeleteorder(buyOrder.id);
                     deleteOrder(buyOrder.id);
-                    buyNodeLL = _getNode(true, _treeMaximum(true));
-                    buyOrder = buyNodeLL.head;
                 }
+
+                goodDeleteorder(sellOrder.id);
+                deleteOrder(sellOrder.id);
+                sellNodeLL = _getNode(false, _treeMinimum(false));
+                sellOrder = sellNodeLL.head;
+                buyNodeLL = _getNode(true, _treeMaximum(true));
+                buyOrder = buyNodeLL.head;
+            } else {
+                // Otherwise, the sell order is partially matched.
+                // emit Trade(sellOrder.user, buyOrder.user, buyOrder.quantity, sellNode.key);
+                sellOrder.quantity -= buyOrder.quantity;
+                buyOrder.quantity = 0;
+                buyNodeLL.quantity -= buyOrder.quantity;
+                sellNodeLL.quantity -= buyOrder.quantity;
+                uint256 amount = (buyOrder.quantity *
+                    buyOrder.price *
+                    (1000 - makerFee)) / 1000;
+
+                (bool success, ) = sellOrder.trader.call{value: amount}("");
+                require(success, "Transfer failed.");
+                nextDayExe[buyOrder.trader] += buyOrder.quantity;
+
+                if (sellOrder.quantity == 0) {
+                    deleteOrder(sellOrder.id);
+                    goodDeleteorder(sellOrder.id);
+                }
+
+                goodDeleteorder(buyOrder.id);
+                deleteOrder(buyOrder.id);
+                buyNodeLL = _getNode(true, _treeMaximum(true));
+                buyOrder = buyNodeLL.head;
+                sellNodeLL = _getNode(false, _treeMinimum(false));
+                sellOrder = sellNodeLL.head;
             }
-            console.log("buyNodeLL  - %s",buyNodeLL.quantity);
-            console.log("sellNodeLL  - %s",sellNodeLL.quantity);
+            // }
+            // else{
+            //     break;
+            // }
+            // console.log("buyNodeLL  - %s", buyNodeLL.quantity);
+            // console.log("sellNodeLL  - %s", sellNodeLL.quantity);
             // if (sellNodeLL.head.quantity == 0) {
             //     // If all sell orders at this price have been matched, remove the node from the sell tree.
             //     console.log("last sell price - %s", lastSell);

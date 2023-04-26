@@ -47,79 +47,133 @@ async function main() {
 
   [deployer, account1, account2, account3] = await ethers.getSigners();
 
-  // const txn6 = await router.placeOrder(
-  //   // buy order for 10 units @ 5
-  //   10,
-  //   false,
-  //   5,
-  //   true,
-  //   {
-  //     value: ethers.utils.parseEther("50"),
-  //   }
-  // );
-  // txn6.wait();
+  const txn6 = await router.placeOrder(
+    // buy order for 10 units @ 5
+    10,
+    false,
+    5,
+    true,
+    {
+      value: ethers.utils.parseEther("50"),
+    }
+  );
+  txn6.wait();
 
-  // const p21 = await grid
-  //   .getAvCurrentPrice()
-  //   .then((res) => console.log("current av price - ", res));
-  // const p22 = await grid
-  //   .getCurrentPrice(true)
-  //   .then((res) => console.log("current highest buy price - ", res));
-  // const p23 = await grid
-  //   .getCurrentPrice(false)
-  //   .then((res) => console.log("current lowest sell price - ", res));
+  const p21 = await grid
+    .getAvCurrentPrice()
+    .then((res) => console.log("current av price - ", res));
+  const p22 = await grid
+    .getCurrentPrice(true)
+    .then((res) => console.log("current highest buy price - ", res));
+  const p23 = await grid
+    .getCurrentPrice(false)
+    .then((res) => console.log("current lowest sell price - ", res));
 
-  // const txn7 = await router.connect(account1).placeOrder(
-  //   // buy order for 10 units @ 6
-  //   10,
-  //   false,
-  //   6,
-  //   true,
-  //   {
-  //     value: ethers.utils.parseEther("60"),
-  //   }
-  // );
+  const txn7 = await router.connect(account1).placeOrder(
+    // buy order for 10 units @ 6
+    10,
+    false,
+    6,
+    true,
+    {
+      value: ethers.utils.parseEther("60"),
+    }
+  );
 
-  // const p31 = await grid
-  //   .getAvCurrentPrice()
-  //   .then((res) => console.log("current av price - ", res));
-  // const p32 = await grid
-  //   .getCurrentPrice(true)
-  //   .then((res) => console.log("current highest buy price - ", res));
-  // const p33 = await grid
-  //   .getCurrentPrice(false)
-  //   .then((res) => console.log("current lowest sell price - ", res));
+  const p31 = await grid
+    .getAvCurrentPrice()
+    .then((res) => console.log("current av price - ", res));
+  const p32 = await grid
+    .getCurrentPrice(true)
+    .then((res) => console.log("current highest buy price - ", res));
+  const p33 = await grid
+    .getCurrentPrice(false)
+    .then((res) => console.log("current lowest sell price - ", res));
 
-  // const txn8 = await router.connect(account2).placeOrder(
-  //   // sell order for 10 units @ 6
-  //   10,
-  //   false,
-  //   6,
-  //   false,
-  //   {
-  //     value: ethers.utils.parseEther("60"),
-  //   }
-  // );
-  // const p41 = await grid
-  //   .getAvCurrentPrice()
-  //   .then((res) => console.log("current av price - ", res));
-  // const p42 = await grid
-  //   .getCurrentPrice(true)
-  //   .then((res) => console.log("current highest buy price - ", res));
-  // const p43 = await grid
-  //   .getCurrentPrice(false)
-  //   .then((res) => console.log("current lowest sell price - ", res));
+  const txn75 = await router.connect(account1).placeOrder(
+    // buy order for 10 units @ 6
+    10,
+    false,
+    7,
+    true,
+    {
+      value: ethers.utils.parseEther("70"),
+    }
+  );
 
-  // const txn90 = await router.connect(account1).placeOrder(
-  //   // sell order for 10 units @ 8
-  //   30,
-  //   false,
-  //   5,
-  //   false,
-  //   {
-  //     value: ethers.utils.parseEther("150"),
-  //   }
-  // );
+  const p3431 = await grid
+    .getAvCurrentPrice()
+    .then((res) => console.log("current av price - ", res));
+  const p5532 = await grid
+    .getCurrentPrice(true)
+    .then((res) => console.log("current highest buy price - ", res));
+  const p3ff3 = await grid
+    .getCurrentPrice(false)
+    .then((res) => console.log("current lowest sell price - ", res));
+
+
+    const txn756 = await router.connect(account1).placeOrder(
+      // buy order for 10 units @ 6
+      10,
+      false,
+      5,
+      false,
+      {
+        value: ethers.utils.parseEther("50"),
+      }
+    );
+  
+    const pv3431 = await grid
+      .getAvCurrentPrice()
+      .then((res) => console.log("current av price - ", res));
+    const p55f32 = await grid
+      .getCurrentPrice(true)
+      .then((res) => console.log("current highest buy price - ", res));
+    const p3fdf3 = await grid
+      .getCurrentPrice(false)
+      .then((res) => console.log("current lowest sell price - ", res));
+
+
+
+  const txn8 = await router.connect(account2).placeOrder(
+    // sell order for 10 units @ 6
+    10,
+    false,
+    5,
+    false,
+    {
+      value: ethers.utils.parseEther("50"),
+    }
+  );
+  const p41 = await grid
+    .getAvCurrentPrice()
+    .then((res) => console.log("current av price - ", res));
+  const p42 = await grid
+    .getCurrentPrice(true)
+    .then((res) => console.log("current highest buy price - ", res));
+  const p43 = await grid
+    .getCurrentPrice(false)
+    .then((res) => console.log("current lowest sell price - ", res));
+
+  const txn90 = await router.connect(account1).placeOrder(
+    // sell order for 10 units @ 8
+    30,
+    false,
+    5,
+    false,
+    {
+      value: ethers.utils.parseEther("150"),
+    }
+  );
+  const p4r1 = await grid
+    .getAvCurrentPrice()
+    .then((res) => console.log("current av price - ", res));
+  const ptre42 = await grid
+    .getCurrentPrice(true)
+    .then((res) => console.log("current highest buy price - ", res));
+  const ptre43 = await grid
+    .getCurrentPrice(false)
+    .then((res) => console.log("current lowest sell price - ", res));
 
   // const txkfn7 = await router
   //   .connect(account1)
@@ -148,7 +202,7 @@ async function main() {
   // txn9.wait();
   // const tru = await grid.getAvCurrentPrice().then((res) => console.log(res));
 
-  // console.log("aaaaannnnneeeee WAAALALALAL AHAIOAIAIAIIAA");
+  console.log("aaaaannnnneeeee WAAALALALAL AHAIOAIAIAIIAA");
 
   // const uvikv = await grid
   //   .getOrdersForAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
