@@ -725,35 +725,51 @@ const routerABI = [
 
 export default function Trade() {
   var count = 1;
-  const map = ["Sell", "Buy"];
+  const mappa = ["Sell", "Buy"];
   const [direction, setdirection] = useState(false);
   const [type, settype] = useState(true);
   const [amount, setamount] = useState(0);
   const [price, setprice] = useState(0);
   const [positions, setpositions] = useState([]);
-  const [bal, setbal] = useState({});
+  const [bal, setbal] = useState([]);
   const [currPrice, setCurrPrice] = useState(0);
 
   const { data: signer, isError } = useSigner();
   const { address, isConnected } = useAccount();
 
-  const { config } = usePrepareContractWrite({
-    address: "0x70e0ba845a1a0f2da3359c97e0285013525ffc49",
-    abi: routerABI,
-    functionName: "placeOrder",
-    args: getArgsforOrder(),
-  });
-  // const swap = await routerContract
-  //   .placeOrder(amount, type, price, direction, {
-  //     value: ethers.utils.parseEther(ETHtoBeSent.toString()),
-  //   })
-  //   .then(() => getPositions());
+  // const getArgsforOrder = () => {
+  // let ETHtoBeSent = 0;
+  // if (direction) {
+  //   if (type) {
+  //     ETHtoBeSent = (currPrice * 15 * amount) / 10;
+  //     setprice(ETHtoBeSent);
+  //   } else {
+  //     ETHtoBeSent = (price * 15 * amount) / 10;
+  //   }
+  // }
+  //   return [
+  //     amount,
+  //     type,
+  //     price,
+  //     direction,
+  //     {
+  //       value: ethers.utils.parseEther(ETHtoBeSent.toString()),
+  //     },
+  //   ];
+  // };
 
-  const { data, isLoading, isSuccess, write } = useContractWrite(config);
+  // const { config } = usePrepareContractWrite({
+  //   address: "0x70e0ba845a1a0f2da3359c97e0285013525ffc49",
+  //   abi: routerABI,
+  //   functionName: "placeOrder",
+  //   args: getArgsforOrder(),
+  // });
 
-  getPositions();
-  getPrice();
-  count++;
+  // const { data, isLoading, isSuccess, write } = useContractWrite(config);
+
+  // getPositions();
+  // getPrice();
+  // count++;
 
   useEffect(() => {
     getPositions();
@@ -770,7 +786,7 @@ export default function Trade() {
 
   const getBalances = async (address) => {
     const exe = await routerContract
-      .getExebalance(address)
+      .getEXEbalance(address)
       .then(() => console.log("Noice"));
     const nextexe = await routerContract
       .getNextExeBal(address)
@@ -778,26 +794,28 @@ export default function Trade() {
     const balance = await fetchBalance({
       address: address,
     });
-    console.log("We are getting bals");
-    setbal({ exe: exe, nextexe: nextexe, balance: balance });
+    
+    setbal([ exe, nextexe, balance ]);
+    console.log("We are getting bals", bal.exe, bal.nextexe, bal.balance);
   };
 
   const getPositions = async () => {
     const orderIDArray = await gridContract
       .getOrdersForAddress(address)
       .then(() => console.log("boom bam"));
+    console.log(orderIDArray);
     const orders = orderIDArray.map((id) => gridContract.getOrderByID(id));
     console.log("We are getting poss");
     setpositions(orders);
   };
 
   const gridContract = useContract({
-    address: "0x95401dc811bb5740090279ba06cfa8fcf6113778",
+    address: "0x99bba657f2bbc93c02d617f8ba121cb8fc104acf",
     abi: gridABI,
     signerOrProvider: signer,
   });
   const routerContract = useContract({
-    address: "0x70e0ba845a1a0f2da3359c97e0285013525ffc49",
+    address: "0x8f86403a4de0bb5791fa46b8e795c547942fe4cf",
     abi: routerABI,
     signerOrProvider: signer,
   });
@@ -835,9 +853,6 @@ export default function Trade() {
       direction: direction,
     };
     console.log(obj);
-    write?.();
-  };
-  const getArgsforOrder = () => {
     let ETHtoBeSent = 0;
     if (direction) {
       if (type) {
@@ -847,16 +862,17 @@ export default function Trade() {
         ETHtoBeSent = (price * 15 * amount) / 10;
       }
     }
-    return [
-      amount,
-      type,
-      price,
-      direction,
-      {
+    const swap = await routerContract
+      .placeOrder(amount, type, price, direction, {
         value: ethers.utils.parseEther(ETHtoBeSent.toString()),
-      },
-    ];
+      })
+      .then(() => console.log("hello"));
+    // swap.wait();
+    getBalances(address);
+    getBalances();
+    // write?.();
   };
+
   return (
     <>
       <Navbar />
@@ -939,7 +955,7 @@ export default function Trade() {
           <h2 className="heading2">Your Positions</h2>
           {positions.map((item) => (
             <div key={item.id} className="infoBlock">
-              <span className="infoItem">{item.map[direction]}</span>
+              <span className="infoItem">{item.mappa[direction]}</span>
               <span className="infoItem">Size: {item.quantity}</span>
               <span className="infoItem">Price: {item.price}</span>
               <button
