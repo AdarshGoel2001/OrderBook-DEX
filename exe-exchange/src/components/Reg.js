@@ -8,7 +8,6 @@ import lighthouse from "@lighthouse-web3/sdk";
 import { useAccount, useContract, useSigner } from "wagmi";
 import { useProvider } from "wagmi";
 
-
 export default function Reg() {
   const [name, setName] = useState("");
 
@@ -55,7 +54,11 @@ export default function Reg() {
     link.click();
   };
 
-  const uploadHandler = () => {};
+  const uploadHandler = async (e) => {
+    e.preventDefault();
+    console.log(e);
+    await uploadFileEncrypted(e).then(() => console.log("hello"));
+  };
 
   const encryptionSignature = async () => {
     const messageRequested = (await lighthouse.getAuthMessage(address)).data
@@ -74,6 +77,11 @@ export default function Reg() {
     console.log(percentageDone);
   };
 
+  const handleSubmit = async (e) => {
+    // e.preventDefault();
+    // await uploadFileEncrypted(e).then(()=>console.log("hello"));
+  };
+
   /* Deploy file along with encryption */
   const uploadFileEncrypted = async (e) => {
     /*
@@ -85,14 +93,17 @@ export default function Reg() {
        - uploadProgressCallback: function to get progress (optional)
     */
     const sig = await encryptionSignature();
+    // var tmppath = URL.createObjectURL(e.target.files[0]);
+    // tmppath=tmppath.slice(5)
     console.log(sig);
-    console.log(e);
+    // console.log(tmppath);
+    console.log(e.target.files[0]);
     const response = await lighthouse.uploadEncrypted(
       e,
       "b5f54b5b.a9704f1109444ea3a1831057a0585df4",
       sig.publicKey,
-      sig.signedMessage,
-      progressCallback
+      sig.signedMessage
+      // progressCallback
     );
     console.log(response);
     /*
@@ -212,14 +223,14 @@ export default function Reg() {
           <button type="text" class="submit" onClick={submitHandler}>
             Download KYC file
           </button>
-          <form action="" id="up">
+          <form action="" id="up" onSubmit={handleSubmit}>
             <input
               accept="text/*"
               id="files"
               form="up"
               class="submit"
               type="file"
-              onChangeCapture={uploadHandler}
+              onChangeCapture={uploadFileEncrypted}
               placeholder="Upload encrypted to IPFS"
             />
             <button type="text" class="submit" onClick={uploadHandler}>

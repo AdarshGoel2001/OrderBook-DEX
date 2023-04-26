@@ -12,12 +12,23 @@ import {
 } from "@web3modal/ethereum";
 import { Web3Modal } from "@web3modal/react";
 import { configureChains, createClient, WagmiConfig } from "wagmi";
-import { polygon, polygonMumbai } from "wagmi/chains";
+import { polygon, polygonMumbai, hardhat } from "wagmi/chains";
+import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 
-const chains = [polygon, polygonMumbai];
+// const chains = [polygon, polygonMumbai];
+const chains = [hardhat];
 const projectId = process.env.REACT_APP_W3M_PROJECTID;
 
-const { provider } = configureChains(chains, [w3mProvider({ projectId })]);
+// const { provider } = configureChains(chains, [w3mProvider({ projectId })]);
+
+const { provider } = configureChains(chains, [
+  jsonRpcProvider({
+    rpc: (chain) => ({
+      http: `http://127.0.0.1:8545/`,
+    }),
+  }),
+]);
+
 const wagmiClient = createClient({
   autoConnect: true,
   connectors: w3mConnectors({ projectId, version: 1, chains }),

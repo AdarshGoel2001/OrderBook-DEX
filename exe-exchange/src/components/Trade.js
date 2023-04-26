@@ -2,24 +2,758 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import "../App.css";
 import Navbar from "./Navbar";
-import { useAccount, useContract, useSigner } from "wagmi";
+import {
+  useAccount,
+  useContract,
+  useSigner,
+  usePrepareContractWrite,
+  useContractWrite,
+} from "wagmi";
 import { fetchBalance } from "@wagmi/core";
 
+const gridABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_timeOracle",
+        type: "address",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
+    stateMutability: "payable",
+    type: "fallback",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32[]",
+        name: "values",
+        type: "bytes32[]",
+      },
+      {
+        internalType: "bytes32",
+        name: "value",
+        type: "bytes32",
+      },
+    ],
+    name: "IndexOf",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32[]",
+        name: "values",
+        type: "bytes32[]",
+      },
+      {
+        internalType: "uint256",
+        name: "i",
+        type: "uint256",
+      },
+    ],
+    name: "RemoveByIndex",
+    outputs: [],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32[]",
+        name: "values",
+        type: "bytes32[]",
+      },
+      {
+        internalType: "bytes32",
+        name: "value",
+        type: "bytes32",
+      },
+    ],
+    name: "RemoveByValue",
+    outputs: [],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bool",
+        name: "isBuy",
+        type: "bool",
+      },
+    ],
+    name: "_treeMaximum",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bool",
+        name: "isBuy",
+        type: "bool",
+      },
+    ],
+    name: "_treeMinimum",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "id",
+            type: "bytes32",
+          },
+          {
+            internalType: "address",
+            name: "trader",
+            type: "address",
+          },
+          {
+            internalType: "uint256",
+            name: "quantity",
+            type: "uint256",
+          },
+          {
+            internalType: "bool",
+            name: "isTaker",
+            type: "bool",
+          },
+          {
+            internalType: "uint256",
+            name: "price",
+            type: "uint256",
+          },
+          {
+            internalType: "bool",
+            name: "isBuy",
+            type: "bool",
+          },
+          {
+            internalType: "bytes32",
+            name: "next",
+            type: "bytes32",
+          },
+        ],
+        internalType: "struct IGridStructs.Order",
+        name: "order",
+        type: "tuple",
+      },
+      {
+        internalType: "bytes32",
+        name: "id",
+        type: "bytes32",
+      },
+    ],
+    name: "addOrder",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "trader",
+        type: "address",
+      },
+    ],
+    name: "checkIfWhitelisted",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "id",
+        type: "bytes32",
+      },
+    ],
+    name: "deleteOrder",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getAvCurrentPrice",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bool",
+        name: "isBuy",
+        type: "bool",
+      },
+    ],
+    name: "getCurrentPrice",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_user",
+        type: "address",
+      },
+    ],
+    name: "getExe",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_user",
+        type: "address",
+      },
+    ],
+    name: "getNextExe",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "id",
+        type: "bytes32",
+      },
+    ],
+    name: "getOrderByID",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "bytes32",
+            name: "id",
+            type: "bytes32",
+          },
+          {
+            internalType: "address",
+            name: "trader",
+            type: "address",
+          },
+          {
+            internalType: "uint256",
+            name: "quantity",
+            type: "uint256",
+          },
+          {
+            internalType: "bool",
+            name: "isTaker",
+            type: "bool",
+          },
+          {
+            internalType: "uint256",
+            name: "price",
+            type: "uint256",
+          },
+          {
+            internalType: "bool",
+            name: "isBuy",
+            type: "bool",
+          },
+          {
+            internalType: "bytes32",
+            name: "next",
+            type: "bytes32",
+          },
+        ],
+        internalType: "struct IGridStructs.Order",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "trader",
+        type: "address",
+      },
+    ],
+    name: "getOrdersForAddress",
+    outputs: [
+      {
+        internalType: "bytes32[]",
+        name: "",
+        type: "bytes32[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bool",
+        name: "isBuy",
+        type: "bool",
+      },
+    ],
+    name: "getRootTree",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "inOrderBuy",
+    outputs: [
+      {
+        internalType: "uint256[2][10]",
+        name: "",
+        type: "uint256[2][10]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "root",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256[2][10]",
+        name: "priceArray",
+        type: "uint256[2][10]",
+      },
+    ],
+    name: "inOrderBuyHelper",
+    outputs: [],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "inOrderSell",
+    outputs: [
+      {
+        internalType: "uint256[2][10]",
+        name: "",
+        type: "uint256[2][10]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "root",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256[2][10]",
+        name: "priceArray",
+        type: "uint256[2][10]",
+      },
+    ],
+    name: "inOrderSellHelper",
+    outputs: [],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    name: "orders",
+    outputs: [
+      {
+        internalType: "bytes32",
+        name: "id",
+        type: "bytes32",
+      },
+      {
+        internalType: "address",
+        name: "trader",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "quantity",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "isTaker",
+        type: "bool",
+      },
+      {
+        internalType: "uint256",
+        name: "price",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "isBuy",
+        type: "bool",
+      },
+      {
+        internalType: "bytes32",
+        name: "next",
+        type: "bytes32",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_makerFee",
+        type: "uint256",
+      },
+    ],
+    name: "setMakerFee",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_router",
+        type: "address",
+      },
+    ],
+    name: "setRouter",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_takerFee",
+        type: "uint256",
+      },
+    ],
+    name: "setTakerFee",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "updateAllEXEbalances",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_daystart",
+        type: "uint256",
+      },
+    ],
+    name: "updateTimeStamp",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_user",
+        type: "address",
+      },
+    ],
+    name: "whitelist",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    stateMutability: "payable",
+    type: "receive",
+  },
+];
+
+const routerABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_grid",
+        type: "address",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "_id",
+        type: "bytes32",
+      },
+    ],
+    name: "deleteOrder",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "consumer",
+        type: "address",
+      },
+    ],
+    name: "getEXEbalance",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getGrid",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "consumer",
+        type: "address",
+      },
+    ],
+    name: "getNextExeBal",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "getOrderDetails",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_shares",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "_isTaker",
+        type: "bool",
+      },
+      {
+        internalType: "uint256",
+        name: "_price",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "_isBuy",
+        type: "bool",
+      },
+    ],
+    name: "placeOrder",
+    outputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+    ],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_admin",
+        type: "address",
+      },
+    ],
+    name: "setAdmin",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_grid",
+        type: "address",
+      },
+    ],
+    name: "setGrid",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_user",
+        type: "address",
+      },
+    ],
+    name: "whitelist",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+];
 
 export default function Trade() {
-  var count=1;
-  const map=["Sell", "Buy"]
+  var count = 1;
+  const map = ["Sell", "Buy"];
   const [direction, setdirection] = useState(false);
   const [type, settype] = useState(true);
   const [amount, setamount] = useState(0);
   const [price, setprice] = useState(0);
   const [positions, setpositions] = useState([]);
-  const [bal, setbal]=useState({});
-  const [currPrice, setCurrPrice]=useState(0);
+  const [bal, setbal] = useState({});
+  const [currPrice, setCurrPrice] = useState(0);
 
-  const { data: signer, isError, isLoading } = useSigner();
+  const { data: signer, isError } = useSigner();
   const { address, isConnected } = useAccount();
-  
+
+  const { config } = usePrepareContractWrite({
+    address: "0x70e0ba845a1a0f2da3359c97e0285013525ffc49",
+    abi: routerABI,
+    functionName: "placeOrder",
+    args: getArgsforOrder(),
+  });
+  // const swap = await routerContract
+  //   .placeOrder(amount, type, price, direction, {
+  //     value: ethers.utils.parseEther(ETHtoBeSent.toString()),
+  //   })
+  //   .then(() => getPositions());
+
+  const { data, isLoading, isSuccess, write } = useContractWrite(config);
+
+  getPositions();
+  getPrice();
+  count++;
 
   useEffect(() => {
     getPositions();
@@ -27,36 +761,44 @@ export default function Trade() {
     getPrice();
   }, [isConnected]);
 
-  const getPrice = async () =>{
-    const price=await gridContract.getAvCurrentPrice().then(()=>console.log("Price gotten"));
+  const getPrice = async () => {
+    const price = await gridContract
+      .getAvCurrentPrice()
+      .then(() => console.log("Price gotten"));
     setCurrPrice(price);
-  }
+  };
 
   const getBalances = async (address) => {
-    const exe=await routerContract.getExebalance(address).then(()=>console.log("Noice"));
-    const nextexe=await routerContract.getNextExeBal(address).then(()=>console.log("gg"));
+    const exe = await routerContract
+      .getExebalance(address)
+      .then(() => console.log("Noice"));
+    const nextexe = await routerContract
+      .getNextExeBal(address)
+      .then(() => console.log("gg"));
     const balance = await fetchBalance({
       address: address,
     });
     console.log("We are getting bals");
-    setbal({exe:exe, nextexe:nextexe, balance:balance});
-  }
+    setbal({ exe: exe, nextexe: nextexe, balance: balance });
+  };
 
   const getPositions = async () => {
     const orderIDArray = await gridContract
       .getOrdersForAddress(address)
       .then(() => console.log("boom bam"));
     const orders = orderIDArray.map((id) => gridContract.getOrderByID(id));
-    console.log("We are getting poss")
+    console.log("We are getting poss");
     setpositions(orders);
   };
 
   const gridContract = useContract({
-    address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+    address: "0x95401dc811bb5740090279ba06cfa8fcf6113778",
+    abi: gridABI,
     signerOrProvider: signer,
   });
   const routerContract = useContract({
-    address: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+    address: "0x70e0ba845a1a0f2da3359c97e0285013525ffc49",
+    abi: routerABI,
     signerOrProvider: signer,
   });
 
@@ -76,23 +818,45 @@ export default function Trade() {
   //   console.log(price);
   // };
 
-  const deleteOrder = async (id) =>{
-    const del= await routerContract.deleteOrder(id).then(()=>console.log("Order deleted"));
-    setpositions((pos) => pos.filter((pos)=>pos.id!==id));
-  }
-
-  const handleSwap = async () => {
-
-    console.log(process.env.REACT_APP_LIGHTHOUSE_API)
-    
-    const obj={amount:amount, type:type, price:price, direction:direction}
-    console.log(obj);
-    const swap=await routerContract.placeOrder(amount, type, price, direction).then(()=>getPositions());
-    getPositions();
-    getPrice();
-    count++;
+  const deleteOrder = async (id) => {
+    const del = await routerContract
+      .deleteOrder(id)
+      .then(() => console.log("Order deleted"));
+    setpositions((pos) => pos.filter((pos) => pos.id !== id));
   };
 
+  const handleSwap = async () => {
+    console.log(process.env.REACT_APP_LIGHTHOUSE_API);
+
+    const obj = {
+      amount: amount,
+      type: type,
+      price: price,
+      direction: direction,
+    };
+    console.log(obj);
+    write?.();
+  };
+  const getArgsforOrder = () => {
+    let ETHtoBeSent = 0;
+    if (direction) {
+      if (type) {
+        ETHtoBeSent = (currPrice * 15 * amount) / 10;
+        setprice(ETHtoBeSent);
+      } else {
+        ETHtoBeSent = (price * 15 * amount) / 10;
+      }
+    }
+    return [
+      amount,
+      type,
+      price,
+      direction,
+      {
+        value: ethers.utils.parseEther(ETHtoBeSent.toString()),
+      },
+    ];
+  };
   return (
     <>
       <Navbar />
@@ -122,14 +886,14 @@ export default function Trade() {
           <div className="selectorBlock">
             <button
               // onChange={settype(true)}
-              onClick={()=>handletype(false)}
+              onClick={() => handletype(false)}
               className={"selector selectorLeft" + (!type ? " selected" : "")}
             >
               Maker (Limit)
             </button>
             <button
               // onChange={settype(false)}
-              onClick={()=>handletype(true)}
+              onClick={() => handletype(true)}
               className={"selector selectorRight" + (type ? " selected" : "")}
             >
               Taker (Market)
@@ -139,6 +903,7 @@ export default function Trade() {
             Current Price :${currPrice || 0}
             {/* <span style={{ color: "#5fbf80", fontWeight: 600 }}>$30.00</span>{" "} */}
           </p>
+          <p>Enter Quantity</p>
           <input
             type="number"
             name="amount"
@@ -147,8 +912,9 @@ export default function Trade() {
             min="1"
             value={amount}
             onChange={(e) => setamount(e.target.value)}
-          />
-          {type && (
+          />{" "}
+          <p>Enter Price</p>
+          {!type && (
             <input
               type="number"
               name="price"
